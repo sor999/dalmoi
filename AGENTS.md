@@ -9,6 +9,7 @@
 - 커밋 작성: [Commit Skill](.agents/skills/commit/SKILL.md)을 따릅니다.
 - 이슈 작성: [Issue Skill](.agents/skills/issue/SKILL.md)과 [이슈 템플릿](.github/ISSUE_TEMPLATE/custom.md)을 따릅니다.
 - PR 작성: [PR Skill](.agents/skills/pr/SKILL.md)과 [PR 템플릿](.github/pull_request_template.md)을 따릅니다.
+- PR 머지: [Merge 에이전트](.codex/agents/merge.toml)의 스쿼시 머지 규칙을 따릅니다.
 
 ## 공통 작업 원칙
 
@@ -30,6 +31,8 @@
 ## 보조 에이전트
 
 [Code Reviewer](.codex/agents/code-reviewer.toml)와 [Tester](.codex/agents/tester.toml)는 Spring Boot 서버 전용 역할입니다. 실행 환경과 사용자 요청에서 위임이 허용되고 필요한 경우에 사용합니다. Android 검증을 서버 전용 역할로 대체하지 않습니다.
+
+[Merge](.codex/agents/merge.toml)는 저장소 공통 PR 머지 역할입니다. PR은 기본적으로 **스쿼시 머지**하며, 사용자가 다른 방식을 명시적으로 지정한 경우에만 변경합니다. 스쿼시 머지가 불가능하면 원인을 보고하고 다른 방식으로 임의 전환하지 않습니다. 스쿼시 커밋 메시지는 공통 커밋 스킬을 따릅니다.
 
 ## 출처
 

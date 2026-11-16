@@ -8,3 +8,7 @@ config_file = "agents/code-reviewer.toml"
 [agents.tester]
 description = "JUnit 및 프로젝트 DB 통합 테스트 전문 에이전트"
 config_file = "agents/tester.toml"
+
+[agents.merge]
+description = "사용자가 요청한 PR의 스쿼시 머지 전담 에이전트"
+config_file = "agents/merge.toml"
