@@ -2,7 +2,7 @@ name: dalmoi-local
 
 services:
   postgres:
-    image: postgres:16
+    image: postgis/postgis:16-3.5
     environment:
       POSTGRES_DB: dalmoi_db
       POSTGRES_USER: ${DB_USERNAME:-postgres}
