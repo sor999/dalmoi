@@ -1,0 +1,10 @@
+[agents]
+max_threads = 3
+
+[agents.code_reviewer]
+description = "Spring Boot 백엔드 코드 리뷰 전문 에이전트"
+config_file = "agents/code-reviewer.toml"
+
+[agents.tester]
+description = "JUnit 및 프로젝트 DB 통합 테스트 전문 에이전트"
+config_file = "agents/tester.toml"
