@@ -1,0 +1,30 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Gradle / Android local outputs
+.gradle/
+.kotlin/
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+.cxx/
+.externalNativeBuild/
+local.properties
+captures/
+
+# Local secrets / signing
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.jks
+*.keystore
+keystore.properties

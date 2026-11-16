@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spring Boot"
+  short_description: "Spring Boot 백엔드 구현·테스트·리뷰를 위한 범용 하네스"
+  default_prompt: "$spring-boot 스킬을 사용해 기존 프로젝트 컨벤션에 맞춰 요청한 백엔드 작업을 수행해줘."

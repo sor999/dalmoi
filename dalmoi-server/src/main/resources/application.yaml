@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: dalmoi
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/dalmoi_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:local-password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:3000}
+
+  jpa:
+    open-in-view: false
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: ${HIBERNATE_FORMAT_SQL:false}
+        jdbc:
+          time_zone: UTC
+        default_batch_fetch_size: 100
+
+  flyway:
+    validate-migration-naming: true
+
+logging:
+  level:
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:WARN}
