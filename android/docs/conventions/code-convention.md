@@ -2,7 +2,7 @@
 
 ## 1. 적용 범위와 기준
 
-Android 앱의 기본 스택, MVVM 구조, 상태 관리 및 코드 작성 규칙을 정의한다. 현재 `dalmoi-android`에는 앱 소스·Gradle 프로젝트가 없으므로 아래 스택은 **첫 구현에 적용할 기본안**이며 설치·빌드 완료 상태를 뜻하지 않는다. 실제 도입 버전과 SDK 범위는 프로젝트 생성 시 호환성을 검증해 Gradle에 기록한다.
+Android 앱의 기본 스택, MVVM 구조, 상태 관리 및 코드 작성 규칙을 정의한다. 현재 `android`에는 앱 소스·Gradle 프로젝트가 없으므로 아래 스택은 **첫 구현에 적용할 기본안**이며 설치·빌드 완료 상태를 뜻하지 않는다. 실제 도입 버전과 SDK 범위는 프로젝트 생성 시 호환성을 검증해 Gradle에 기록한다.
 
 - 공통 작업 규칙은 [Android 지침](../../AGENTS.md)과 루트 지침을 따른다.
 - Android 앱의 코드 작성, 계층별 책임, 의존성 방향과 상태 관리 방식을 다룬다.
@@ -145,7 +145,7 @@ com.sor999.dalmoi
 - Android 프로젝트가 구성되면 해당 디렉터리의 wrapper로 관련 테스트 → lint → debug 빌드를 실행한다. 아래는 `:app` 모듈 구성 후 사용할 예시이며 현재 실행 가능한 명령이 아니다.
 
 ```bash
-cd dalmoi-android
+cd android
 ./gradlew :app:testDebugUnitTest
 ./gradlew :app:lintDebug
 ./gradlew :app:assembleDebug

@@ -4,8 +4,8 @@
 
 이 저장소는 Android 앱과 Spring Boot 서버를 함께 관리합니다. 빌드와 배포는 프로젝트별로 독립적으로 수행합니다.
 
-- 서버 구현·설계·테스트·리뷰: 먼저 [서버 지침](dalmoi-server/AGENTS.md)을 읽고 [Spring Boot Skill](dalmoi-server/.agents/skills/spring-boot/SKILL.md)을 사용합니다.
-- Android 작업: [Android 지침](dalmoi-android/AGENTS.md)을 따릅니다. Spring Boot 컨벤션을 적용하지 않습니다.
+- 서버 구현·설계·테스트·리뷰: 먼저 [서버 지침](backend/AGENTS.md)을 읽고 [Spring Boot Skill](backend/.agents/skills/spring-boot/SKILL.md)을 사용합니다.
+- Android 작업: [Android 지침](android/AGENTS.md)을 따릅니다. Spring Boot 컨벤션을 적용하지 않습니다.
 - 커밋 작성: [Commit Skill](.agents/skills/commit/SKILL.md)을 따릅니다.
 - 이슈 작성: [Issue Skill](.agents/skills/issue/SKILL.md)과 [이슈 템플릿](.github/ISSUE_TEMPLATE/custom.md)을 따릅니다.
 - PR 작성: [PR Skill](.agents/skills/pr/SKILL.md)과 [PR 템플릿](.github/pull_request_template.md)을 따릅니다.
