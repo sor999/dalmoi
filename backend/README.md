@@ -1,6 +1,6 @@
 # 달모이 서버
 
-Java 25와 Docker 엔진이 필요합니다. 아래 명령은 `dalmoi-server/`에서 실행합니다.
+Java 25와 Docker 엔진이 필요합니다. 아래 명령은 `backend/`에서 실행합니다.
 
 ## 로컬 실행
 
