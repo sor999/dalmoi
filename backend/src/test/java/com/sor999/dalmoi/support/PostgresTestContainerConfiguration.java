@@ -12,8 +12,8 @@ public class PostgresTestContainerConfiguration {
     @Bean
     @ServiceConnection
     PostgreSQLContainer postgresContainer() {
-        return new PostgreSQLContainer(DockerImageName.parse("postgis/postgis:16-3.5")
-                .asCompatibleSubstituteFor("postgres"))
+        return new PostgreSQLContainer(
+                DockerImageName.parse("postgis/postgis:16-3.5").asCompatibleSubstituteFor("postgres"))
                 .withDatabaseName("dalmoi_test")
                 .withUsername("test_user")
                 .withPassword("test_password");

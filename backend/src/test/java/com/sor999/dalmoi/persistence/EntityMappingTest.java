@@ -56,7 +56,8 @@ class EntityMappingTest {
         Member member = persistMember();
         MemberCredential credential = persist(MemberCredential.create(member, "password-hash"));
         Instant issuedAt = Instant.parse("2026-11-16T00:00:00Z");
-        AuthSession authSession = persist(AuthSession.create(member, "refresh-hash", issuedAt, issuedAt.plusSeconds(3600)));
+        AuthSession authSession = persist(
+                AuthSession.create(member, "refresh-hash", issuedAt, issuedAt.plusSeconds(3600)));
         Course course = persist(Course.create(member, "한강 코스", route(50), 1200.5, false));
         Crew crew = persist(Crew.create(member, "달모이", "INVITE"));
         CrewMember crewMember = persist(CrewMember.create(crew, member));
@@ -68,8 +69,10 @@ class EntityMappingTest {
 
         entityManager.flush();
 
-        jdbcTemplate.update("UPDATE session_participants SET status = 'FINISHED', started_at = ?, ended_at = ? WHERE id = ?",
-                java.sql.Timestamp.from(issuedAt), java.sql.Timestamp.from(issuedAt.plusSeconds(60)), participant.getId());
+        jdbcTemplate.update(
+                "UPDATE session_participants SET status = 'FINISHED', started_at = ?, ended_at = ? WHERE id = ?",
+                java.sql.Timestamp.from(issuedAt), java.sql.Timestamp.from(issuedAt.plusSeconds(60)),
+                participant.getId());
 
         RecordJob job = persist(RecordJob.create(participant, 1));
         RunningRecord record = persist(RunningRecord.create(participant, 100.5, 60, "v1"));
@@ -82,20 +85,23 @@ class EntityMappingTest {
         MemberCredential savedCredential = entityManager.find(MemberCredential.class, member.getId());
         assertThat(savedCredential.getId()).isEqualTo(credential.getId()).isEqualTo(member.getId());
         assertThat(savedCredential.getPasswordHash()).isEqualTo("password-hash");
-        assertThat(entityManager.find(AuthSession.class, authSession.getId()).getExpiresAt()).isEqualTo(issuedAt.plusSeconds(3600));
+        assertThat(entityManager.find(AuthSession.class, authSession.getId()).getExpiresAt())
+                .isEqualTo(issuedAt.plusSeconds(3600));
 
         Course savedCourse = entityManager.find(Course.class, course.getId());
         assertThat(savedCourse.getRoute().getSRID()).isEqualTo(4326);
         assertThat(savedCourse.getRoute().getCoordinates()).containsExactly(route(50).getCoordinates());
         assertThat(savedCourse.getEstimatedDistanceMeters()).isEqualTo(1200.5);
         assertThat(entityManager.find(Crew.class, crew.getId()).getMaxMembers()).isEqualTo((short) 10);
-        assertThat(entityManager.find(CrewMember.class, crewMember.getId()).getMember().getId()).isEqualTo(member.getId());
+        assertThat(entityManager.find(CrewMember.class, crewMember.getId()).getMember().getId())
+                .isEqualTo(member.getId());
 
         RunningSession savedSession = entityManager.find(RunningSession.class, session.getId());
         assertThat(savedSession.getStatus()).isEqualTo(SessionStatus.WAITING);
         assertThat(savedSession.getPlannedRoute().getCoordinates()).containsExactly(route(50).getCoordinates());
         assertThat(savedSession.getCrewNameSnapshot()).isEqualTo("달모이");
-        assertThat(entityManager.find(SessionParticipant.class, participant.getId()).getStatus()).isEqualTo(ParticipantStatus.FINISHED);
+        assertThat(entityManager.find(SessionParticipant.class, participant.getId()).getStatus())
+                .isEqualTo(ParticipantStatus.FINISHED);
 
         GpsEvent savedEvent = entityManager.find(GpsEvent.class, eventId);
         assertThat(savedEvent.getValidationStatus()).isEqualTo(GpsValidationStatus.PENDING);
@@ -132,10 +138,8 @@ class EntityMappingTest {
 
         String wkt = pointCount == 1 ? "LINESTRING(126.93 37.52)" : route(pointCount).toText();
 
-        assertThatThrownBy(() -> jdbcTemplate.update(
-                "UPDATE courses SET route = ST_GeomFromText(?, 4326) WHERE id = ?",
-                wkt, course.getId()))
-                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE courses SET route = ST_GeomFromText(?, 4326) WHERE id = ?",
+                wkt, course.getId())).isInstanceOf(DataAccessException.class);
     }
 
     @Test
@@ -147,8 +151,7 @@ class EntityMappingTest {
 
         assertThatThrownBy(() -> jdbcTemplate.update(
                 "UPDATE courses SET route = ST_GeomFromText('LINESTRING(126 37,181 38)',4326) WHERE id = ?",
-                course.getId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                course.getId())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -161,9 +164,8 @@ class EntityMappingTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> jdbcTemplate.update(
-                "INSERT INTO crew_members(crew_id, member_id, joined_at) VALUES (?, ?, now())",
-                crew.getId(), member.getId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                "INSERT INTO crew_members(crew_id, member_id, joined_at) VALUES (?, ?, now())", crew.getId(),
+                member.getId())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -198,10 +200,8 @@ class EntityMappingTest {
 
         entityManager.flush();
 
-        assertThatThrownBy(() -> jdbcTemplate.update(
-                "UPDATE session_participants SET status = 'RUNNING' WHERE id = ?",
-                participant.getId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE session_participants SET status = 'RUNNING' WHERE id = ?",
+                participant.getId())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -217,12 +217,12 @@ class EntityMappingTest {
 
         entityManager.flush();
 
-        jdbcTemplate.update("UPDATE session_participants SET status = 'RUNNING', started_at = now() WHERE id = ?", firstParticipant.getId());
+        jdbcTemplate.update("UPDATE session_participants SET status = 'RUNNING', started_at = now() WHERE id = ?",
+                firstParticipant.getId());
 
         assertThatThrownBy(() -> jdbcTemplate.update(
                 "UPDATE session_participants SET status = 'RUNNING', started_at = now() WHERE id = ?",
-                secondParticipant.getId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                secondParticipant.getId())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -236,11 +236,11 @@ class EntityMappingTest {
 
         entityManager.flush();
 
-        jdbcTemplate.update("UPDATE running_sessions SET status = 'RUNNING', started_at = now() WHERE id = ?", first.getId());
+        jdbcTemplate.update("UPDATE running_sessions SET status = 'RUNNING', started_at = now() WHERE id = ?",
+                first.getId());
 
         assertThatThrownBy(() -> jdbcTemplate.update(
-                "UPDATE running_sessions SET status = 'RUNNING', started_at = now() WHERE id = ?",
-                second.getId()))
+                "UPDATE running_sessions SET status = 'RUNNING', started_at = now() WHERE id = ?", second.getId()))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -254,7 +254,9 @@ class EntityMappingTest {
 
         entityManager.flush();
 
-        jdbcTemplate.update("UPDATE courses SET title = '변경', route = ST_GeomFromText(?,4326), estimated_distance_m = 200, deleted_at = now() WHERE id = ?", route(3).toText(), course.getId());
+        jdbcTemplate.update(
+                "UPDATE courses SET title = '변경', route = ST_GeomFromText(?,4326), estimated_distance_m = 200, deleted_at = now() WHERE id = ?",
+                route(3).toText(), course.getId());
         entityManager.clear();
 
         RunningSession saved = entityManager.find(RunningSession.class, session.getId());

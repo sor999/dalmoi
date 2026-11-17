@@ -47,9 +47,6 @@ public class Member {
     }
 
     public static Member create(String email, String nickname) {
-        return builder()
-                .email(email)
-                .nickname(nickname)
-                .build();
+        return builder().email(email).nickname(nickname).build();
     }
 }

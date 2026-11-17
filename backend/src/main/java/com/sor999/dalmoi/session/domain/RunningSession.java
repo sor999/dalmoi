@@ -91,12 +91,7 @@ public class RunningSession {
     }
 
     public static RunningSession create(Crew crew, Member createdBy, Course course, String title) {
-        return builder()
-                .crew(crew)
-                .createdBy(createdBy)
-                .course(course)
-                .title(title)
-                .build();
+        return builder().crew(crew).createdBy(createdBy).course(course).title(title).build();
     }
 
     public LineString getPlannedRoute() {

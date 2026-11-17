@@ -45,7 +45,8 @@ public class RunningRecord {
     private Instant createdAt;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private RunningRecord(SessionParticipant participant, double distanceMeters, long durationSeconds, String calculationVersion) {
+    private RunningRecord(SessionParticipant participant, double distanceMeters, long durationSeconds,
+            String calculationVersion) {
         this.participant = participant;
         this.distanceMeters = distanceMeters;
         this.durationSeconds = durationSeconds;
@@ -53,9 +54,9 @@ public class RunningRecord {
         this.createdAt = Instant.now();
     }
 
-    public static RunningRecord create(SessionParticipant participant, double distanceMeters, long durationSeconds, String calculationVersion) {
-        return builder()
-                .participant(participant)
+    public static RunningRecord create(SessionParticipant participant, double distanceMeters, long durationSeconds,
+            String calculationVersion) {
+        return builder().participant(participant)
                 .distanceMeters(distanceMeters)
                 .durationSeconds(durationSeconds)
                 .calculationVersion(calculationVersion)

@@ -49,9 +49,6 @@ public class CrewMember {
     }
 
     public static CrewMember create(Crew crew, Member member) {
-        return builder()
-                .crew(crew)
-                .member(member)
-                .build();
+        return builder().crew(crew).member(member).build();
     }
 }

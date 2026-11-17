@@ -52,8 +52,7 @@ public class AuthSession {
     }
 
     public static AuthSession create(Member member, String refreshTokenHash, Instant issuedAt, Instant expiresAt) {
-        return builder()
-                .member(member)
+        return builder().member(member)
                 .refreshTokenHash(refreshTokenHash)
                 .issuedAt(issuedAt)
                 .expiresAt(expiresAt)

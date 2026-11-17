@@ -57,10 +57,6 @@ public class Crew {
     }
 
     public static Crew create(Member owner, String name, String inviteCode) {
-        return builder()
-                .owner(owner)
-                .name(name)
-                .inviteCode(inviteCode)
-                .build();
+        return builder().owner(owner).name(name).inviteCode(inviteCode).build();
     }
 }

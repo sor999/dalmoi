@@ -20,7 +20,8 @@ import lombok.NoArgsConstructor;
 import org.locationtech.jts.geom.Point;
 
 @Entity
-@Table(name = "gps_events", uniqueConstraints = {@UniqueConstraint(name = "uq_gps_events_participant_sequence", columnNames = {"participant_id", "sequence"}),
+@Table(name = "gps_events", uniqueConstraints = {
+        @UniqueConstraint(name = "uq_gps_events_participant_sequence", columnNames = {"participant_id", "sequence"}),
         @UniqueConstraint(name = "uq_gps_events_participant_ingest", columnNames = {"participant_id", "ingest_order"})})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -63,7 +64,8 @@ public class GpsEvent {
     private Instant processedAt;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private GpsEvent(UUID eventId, SessionParticipant participant, long sequence, long ingestOrder, Point location, double accuracyMeters, Instant recordedAt, Instant receivedAt) {
+    private GpsEvent(UUID eventId, SessionParticipant participant, long sequence, long ingestOrder, Point location,
+            double accuracyMeters, Instant recordedAt, Instant receivedAt) {
         this.eventId = eventId;
         this.participant = participant;
         this.sequence = sequence;
@@ -75,9 +77,9 @@ public class GpsEvent {
         this.validationStatus = GpsValidationStatus.PENDING;
     }
 
-    public static GpsEvent create(UUID eventId, SessionParticipant participant, long sequence, long ingestOrder, Point location, double accuracyMeters, Instant recordedAt, Instant receivedAt) {
-        return builder()
-                .eventId(eventId)
+    public static GpsEvent create(UUID eventId, SessionParticipant participant, long sequence, long ingestOrder,
+            Point location, double accuracyMeters, Instant recordedAt, Instant receivedAt) {
+        return builder().eventId(eventId)
                 .participant(participant)
                 .sequence(sequence)
                 .ingestOrder(ingestOrder)

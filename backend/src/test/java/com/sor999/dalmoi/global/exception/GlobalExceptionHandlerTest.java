@@ -47,9 +47,7 @@ class GlobalExceptionHandlerTest {
     @ValueSource(strings = {"{", "{}", "{\"name\":\"\"}"})
     @DisplayName("JSON 파싱 오류와 요청 DTO 검증 실패는 동일한 오류 형식을 반환한다")
     void handleExceptionInternal_invalidBody_returnsInvalidRequest(String body) throws Exception {
-        mockMvc.perform(post("/test/errors/body")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+        mockMvc.perform(post("/test/errors/body").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
@@ -85,9 +83,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("지원하지 않는 요청 형식은 415를 반환한다")
     void handleExceptionInternal_unsupportedMediaType_returnsUnsupportedMediaType() throws Exception {
-        mockMvc.perform(post("/test/errors/body")
-                        .contentType(MediaType.TEXT_PLAIN)
-                        .content("name"))
+        mockMvc.perform(post("/test/errors/body").contentType(MediaType.TEXT_PLAIN).content("name"))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_MEDIA_TYPE"));
     }

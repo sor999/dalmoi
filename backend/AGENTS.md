@@ -39,6 +39,7 @@
 
 ## 검증 및 완료 기준
 
+- 코드 변경 후 `./gradlew spotlessApply`로 형식을 정리하고 `./gradlew spotlessCheck checkstyleMain checkstyleTest`를 통과시킵니다. 최초 체크아웃에서는 루트의 `./scripts/install-git-hooks.sh`를 실행합니다. 세부 절차는 [코드 형식 자동화](docs/conventions/code-formatting.md)를 따릅니다.
 - 변경사항과 관련된 테스트를 우선 실행합니다.
 - 필요하면 전체 테스트, 빌드 및 정적 검사를 수행합니다.
 - 테스트 실패 시 구현 결함, 테스트 결함 및 환경 문제를 구분합니다.
