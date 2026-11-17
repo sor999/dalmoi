@@ -43,28 +43,3 @@ Docker 엔진을 실행한 상태에서 다음 명령을 사용합니다. 로컬
 Docker가 없으면 통합 테스트를 건너뛰지 않고 실패합니다. 최초 실행에는 `postgis/postgis:16-3.5` 이미지 다운로드가 필요합니다.
 
 엔티티 매핑과 마이그레이션 제약조건만 검증하려면 `./gradlew test --tests '*EntityMappingTest'`를 실행합니다. 전체 엔티티 저장·조회, 공간 좌표 복원, 공유 기본키, 계획 코스 스냅샷, 활성 가입·동시 주행·GPS 순번의 고유 제약 등을 확인합니다.
-
-## 공통 예외 응답
-
-Controller에서 처리되는 오류는 `global.exception.GlobalExceptionHandler`가 다음 형식으로 반환합니다.
-
-```json
-{
-  "code": "INVALID_INVITE_CODE",
-  "message": "유효하지 않은 초대코드입니다."
-}
-```
-
-비즈니스 오류는 `ErrorCode`에 HTTP 상태, 문자열 코드와 메시지를 등록하고 다음과 같이 발생시킵니다.
-
-```java
-throw new BusinessException(ErrorCode.INVALID_INVITE_CODE);
-```
-
-잘못된 JSON, DTO 검증 실패, 필수 파라미터 누락 및 타입 불일치는 `400 INVALID_REQUEST`를 반환합니다. 없는 경로는 `404 RESOURCE_NOT_FOUND`, 지원하지 않는 HTTP 메서드는 `405 METHOD_NOT_ALLOWED`, 지원하지 않는 응답·요청 형식은 각각 `406 NOT_ACCEPTABLE`, `415 UNSUPPORTED_MEDIA_TYPE`으로 처리합니다. 예상하지 못한 오류는 `500 INTERNAL_SERVER_ERROR`와 고정 메시지를 반환하고 상세 예외는 서버 로그에만 기록합니다. Spring MVC가 제공하는 HTTP 상태와 `Allow` 등의 응답 헤더는 유지합니다.
-
-DB 없이 예외 응답 계약을 검증하려면 다음 명령을 실행합니다.
-
-```bash
-./gradlew test --tests '*GlobalExceptionHandlerTest'
-```
