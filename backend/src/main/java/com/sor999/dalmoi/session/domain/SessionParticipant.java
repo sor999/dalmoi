@@ -20,7 +20,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "session_participants", uniqueConstraints = @UniqueConstraint(name = "uq_session_participants_session_member", columnNames = {"session_id", "member_id"}))
+@Table(name = "session_participants", uniqueConstraints = @UniqueConstraint(name = "uq_session_participants_session_member", columnNames = {
+        "session_id", "member_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SessionParticipant {

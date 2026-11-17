@@ -2,7 +2,7 @@
 
 ## 1. 적용 범위와 기준
 
-Android 앱의 기본 스택, MVVM 구조, 상태 관리 및 코드 작성 규칙을 정의한다. 현재 `android`에는 앱 소스·Gradle 프로젝트가 없으므로 아래 스택은 **첫 구현에 적용할 기본안**이며 설치·빌드 완료 상태를 뜻하지 않는다. 실제 도입 버전과 SDK 범위는 프로젝트 생성 시 호환성을 검증해 Gradle에 기록한다.
+Android 앱의 기본 스택, MVVM 구조, 상태 관리 및 코드 작성 규칙을 정의한다. 현재 `android`에는 형식 검사 전용 Gradle 설정만 있고 앱 소스·Android 모듈이 없으므로 아래 스택은 **첫 구현에 적용할 기본안**이며 설치·빌드 완료 상태를 뜻하지 않는다. 실제 도입 버전과 SDK 범위는 프로젝트 생성 시 호환성을 검증해 Gradle에 기록한다.
 
 - 공통 작업 규칙은 [Android 지침](../../AGENTS.md)과 루트 지침을 따른다.
 - Android 앱의 코드 작성, 계층별 책임, 의존성 방향과 상태 관리 방식을 다룬다.
@@ -134,7 +134,8 @@ com.sor999.dalmoi
 - 리소스 파일과 키는 `snake_case`, 기능 접두사를 사용한다. 예: `course_save`, `course_limit_reached`.
 - ID·거리·시간은 `courseId`, `distanceMeters`, `durationSeconds`처럼 의미와 단위를 드러낸다. API의 km 값은 매핑 경계에서 명시적으로 변환한다.
 - 화면 이동에는 `courseId`·`sessionId` 같은 작은 식별자를 전달하고 목적지에서 조회한다. 전체 경로·토큰·큰 객체를 내비게이션 인자로 넘기지 않는다.
-- 포매터·lint 도구를 도입할 때 설정과 실행 명령을 함께 기록한다. 아직 설치하지 않은 ktlint·detekt를 필수 통과 도구로 기재하지 않는다.
+- Kotlin 및 Gradle Kotlin DSL은 Spotless + ktlint로 정리한다. `android/`에서 `./gradlew spotlessApply`, `./gradlew spotlessCheck`를 사용하며 `.editorconfig`를 IDE와 공유한다. 세부 절차는 [코드 형식 자동화](code-formatting.md)를 따른다.
+- Android Lint는 Android 모듈 구성 후 `./gradlew androidLint`로 실행한다. 앱이 없을 때의 SKIPPED를 성공으로 보고하지 않는다. detekt는 현재 도입하지 않았다.
 
 ## 10. 테스트와 검증
 
