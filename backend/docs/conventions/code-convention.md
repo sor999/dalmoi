@@ -51,6 +51,33 @@
 - OpenAPI/Swagger를 사용하는 프로젝트에서는 `@Operation`, `@ApiResponse` 등으로 요청·응답과 오류를 문서화한다.
 - Controller에서는 요청 바인딩과 응답 반환에 집중하고 비즈니스 로직은 Service에 위임한다.
 
+### 5.1 공통 응답 형식
+
+성공 응답을 반환하는 컨트롤러에서 `ApiResponse.of(data)`를 사용하면 다음과 같이 `data` 필드로 감쌉니다. 자동으로 모든 응답을 감싸는 설정은 아닙니다.
+
+```json
+{
+  "data": {
+    "id": 1
+  }
+}
+```
+
+목록 조회의 `Slice<T>`는 `PageResponse.from(slice)`로 변환하고 `ApiResponse.of(...)`로 감쌀 수 있습니다. 페이지 번호는 0부터 시작하며 `size`는 요청한 페이지 크기입니다. 전체 개수 조회 없이 `hasNext`로 다음 페이지 유무를 제공합니다.
+
+```json
+{
+  "data": {
+    "items": [],
+    "page": 0,
+    "size": 20,
+    "hasNext": false
+  }
+}
+```
+
+오류 응답은 기존 `code`, `message` 형식을 유지하며 `data`로 감싸지 않습니다.
+
 ## 6. Repository 및 데이터베이스
 
 - `JpaRepository`를 기본으로 사용한다.
@@ -68,6 +95,25 @@
 - 필수 엔티티 조회 실패는 `orElseThrow()` 등으로 명시적으로 처리한다.
 - 예외를 무시하거나 성공 응답으로 위장하지 않는다.
 - DB 제약 위반 등 동시성 경쟁에서 발생하는 예외가 적절한 API 결과로 이어지는지 확인한다.
+
+### 7.1 공통 오류 응답
+
+Controller에서 처리되는 오류는 `global.exception.GlobalExceptionHandler`가 다음 형식으로 반환합니다.
+
+```json
+{
+  "code": "INVALID_INVITE_CODE",
+  "message": "유효하지 않은 초대코드입니다."
+}
+```
+
+비즈니스 오류는 `ErrorCode`에 HTTP 상태, 문자열 코드와 메시지를 등록하고 다음과 같이 발생시킵니다.
+
+```java
+throw new BusinessException(ErrorCode.INVALID_INVITE_CODE);
+```
+
+잘못된 JSON, DTO 검증 실패, 필수 파라미터 누락 및 타입 불일치는 `400 INVALID_REQUEST`를 반환합니다. 없는 경로는 `404 RESOURCE_NOT_FOUND`, 지원하지 않는 HTTP 메서드는 `405 METHOD_NOT_ALLOWED`, 지원하지 않는 응답·요청 형식은 각각 `406 NOT_ACCEPTABLE`, `415 UNSUPPORTED_MEDIA_TYPE`으로 처리합니다. 예상하지 못한 오류는 `500 INTERNAL_SERVER_ERROR`와 고정 메시지를 반환하고 상세 예외는 서버 로그에만 기록합니다. Spring MVC가 제공하는 HTTP 상태와 `Allow` 등의 응답 헤더는 유지합니다.
 
 ## 8. 네이밍 및 코드 스타일
 
