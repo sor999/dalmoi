@@ -4,16 +4,32 @@ set -eu
 repository_root=$(git rev-parse --show-toplevel)
 cd "$repository_root"
 
-if git diff --cached --quiet -- backend/src backend/build.gradle backend/settings.gradle backend/gradle backend/gradlew backend/config .githooks/pre-commit; then
+check_backend=false
+check_android=false
+if ! git diff --cached --quiet -- backend/src backend/build.gradle backend/settings.gradle backend/gradle backend/gradlew backend/config .githooks/pre-commit; then
+    check_backend=true
+fi
+if ! git diff --cached --quiet -- android .githooks/pre-commit; then
+    check_android=true
+fi
+if [ "$check_backend" = false ] && [ "$check_android" = false ]; then
     exit 0
 fi
 
-# Check the index, including partial staging, without modifying source files.
+# Check only staged content, including partial staging, without changing sources.
 staged_snapshot=$(mktemp -d "${TMPDIR:-/tmp}/dalmoi-style.XXXXXX")
 trap 'rm -rf "$staged_snapshot"' EXIT HUP INT TERM
 git checkout-index --all --prefix="$staged_snapshot/"
 
-if ! (cd "$staged_snapshot/backend" && ./gradlew --console=plain spotlessCheck checkstyleMain checkstyleTest); then
-    echo '형식 검사 실패: backend에서 ./gradlew spotlessApply 실행 후 변경을 다시 스테이징하세요.' >&2
-    exit 1
+if [ "$check_backend" = true ]; then
+    if ! (cd "$staged_snapshot/backend" && ./gradlew --console=plain spotlessCheck checkstyleMain checkstyleTest); then
+        echo '형식 검사 실패: backend에서 ./gradlew spotlessApply 실행 후 다시 스테이징하세요.' >&2
+        exit 1
+    fi
+fi
+if [ "$check_android" = true ]; then
+    if ! (cd "$staged_snapshot/android" && ./gradlew --console=plain spotlessCheck); then
+        echo '형식 검사 실패: android에서 ./gradlew spotlessApply 실행 후 다시 스테이징하세요.' >&2
+        exit 1
+    fi
 fi
