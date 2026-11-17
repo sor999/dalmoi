@@ -8,4 +8,4 @@
 - 이슈: [이슈 스킬](.agents/skills/issue/SKILL.md)을 따릅니다.
 - PR: [PR 스킬](.agents/skills/pr/SKILL.md)을 따릅니다.
 - 머지: [머지 역할 지침](.codex/agents/merge.toml)을 따릅니다.
-- Stop 훅: [훅 사용 안내](.codex/hooks/USAGE.md)를 따릅니다.
+- Stop 훅: [훅 설정](.codex/hooks.json)을 확인합니다.
