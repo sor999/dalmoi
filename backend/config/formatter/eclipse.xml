@@ -5,7 +5,9 @@
         <setting id="org.eclipse.jdt.core.formatter.tabulation.size" value="4"/>
         <setting id="org.eclipse.jdt.core.formatter.indentation.size" value="4"/>
         <setting id="org.eclipse.jdt.core.formatter.lineSplit" value="120"/>
-        <setting id="org.eclipse.jdt.core.formatter.join_wrapped_lines" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_enum_constants" value="49"/>
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_arguments_in_enum_constant" value="0"/>
+        <setting id="org.eclipse.jdt.core.formatter.join_wrapped_lines" value="false"/>
         <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_field" value="1"/>
         <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_method" value="1"/>
         <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_member_type" value="1"/>

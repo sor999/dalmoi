@@ -64,6 +64,9 @@ public class RecordJob {
     }
 
     public static RecordJob create(SessionParticipant participant, long cutoffIngestOrder) {
-        return builder().participant(participant).cutoffIngestOrder(cutoffIngestOrder).build();
+        return builder()
+                .participant(participant)
+                .cutoffIngestOrder(cutoffIngestOrder)
+                .build();
     }
 }

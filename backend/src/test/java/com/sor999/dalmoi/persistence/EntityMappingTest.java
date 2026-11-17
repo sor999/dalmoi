@@ -138,8 +138,10 @@ class EntityMappingTest {
 
         String wkt = pointCount == 1 ? "LINESTRING(126.93 37.52)" : route(pointCount).toText();
 
-        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE courses SET route = ST_GeomFromText(?, 4326) WHERE id = ?",
-                wkt, course.getId())).isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "UPDATE courses SET route = ST_GeomFromText(?, 4326) WHERE id = ?",
+                wkt, course.getId()))
+                .isInstanceOf(DataAccessException.class);
     }
 
     @Test
@@ -151,7 +153,8 @@ class EntityMappingTest {
 
         assertThatThrownBy(() -> jdbcTemplate.update(
                 "UPDATE courses SET route = ST_GeomFromText('LINESTRING(126 37,181 38)',4326) WHERE id = ?",
-                course.getId())).isInstanceOf(DataIntegrityViolationException.class);
+                course.getId()))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -164,8 +167,9 @@ class EntityMappingTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> jdbcTemplate.update(
-                "INSERT INTO crew_members(crew_id, member_id, joined_at) VALUES (?, ?, now())", crew.getId(),
-                member.getId())).isInstanceOf(DataIntegrityViolationException.class);
+                "INSERT INTO crew_members(crew_id, member_id, joined_at) VALUES (?, ?, now())",
+                crew.getId(), member.getId()))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -200,8 +204,10 @@ class EntityMappingTest {
 
         entityManager.flush();
 
-        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE session_participants SET status = 'RUNNING' WHERE id = ?",
-                participant.getId())).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "UPDATE session_participants SET status = 'RUNNING' WHERE id = ?",
+                participant.getId()))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -222,7 +228,8 @@ class EntityMappingTest {
 
         assertThatThrownBy(() -> jdbcTemplate.update(
                 "UPDATE session_participants SET status = 'RUNNING', started_at = now() WHERE id = ?",
-                secondParticipant.getId())).isInstanceOf(DataIntegrityViolationException.class);
+                secondParticipant.getId()))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -240,7 +247,8 @@ class EntityMappingTest {
                 first.getId());
 
         assertThatThrownBy(() -> jdbcTemplate.update(
-                "UPDATE running_sessions SET status = 'RUNNING', started_at = now() WHERE id = ?", second.getId()))
+                "UPDATE running_sessions SET status = 'RUNNING', started_at = now() WHERE id = ?",
+                second.getId()))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 

@@ -43,6 +43,9 @@ public class MemberCredential {
     }
 
     public static MemberCredential create(Member member, String passwordHash) {
-        return builder().member(member).passwordHash(passwordHash).build();
+        return builder()
+                .member(member)
+                .passwordHash(passwordHash)
+                .build();
     }
 }

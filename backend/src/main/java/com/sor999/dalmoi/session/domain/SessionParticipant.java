@@ -61,6 +61,9 @@ public class SessionParticipant {
     }
 
     public static SessionParticipant create(RunningSession session, Member member) {
-        return builder().session(session).member(member).build();
+        return builder()
+                .session(session)
+                .member(member)
+                .build();
     }
 }

@@ -22,5 +22,7 @@ jobs:
       - name: Check Java formatting and style
         working-directory: backend
         run: ./gradlew --no-daemon spotlessCheck checkstyleMain checkstyleTest
+      - name: Test formatter readability
+        run: python3 backend/scripts/test-formatter.py
       - name: Test agent Stop hook
         run: python3 .codex/hooks/test_check_style.py

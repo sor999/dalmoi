@@ -20,14 +20,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @Override
-    protected ResponseEntity<Object> handleExceptionInternal(Exception exception, Object body, HttpHeaders headers,
+    protected ResponseEntity<Object> handleExceptionInternal(
+            Exception exception, Object body, HttpHeaders headers,
             HttpStatusCode status, WebRequest request) {
         ErrorCode errorCode = switch (status.value()) {
             case 404 -> ErrorCode.RESOURCE_NOT_FOUND;
             case 405 -> ErrorCode.METHOD_NOT_ALLOWED;
             case 406 -> ErrorCode.NOT_ACCEPTABLE;
             case 415 -> ErrorCode.UNSUPPORTED_MEDIA_TYPE;
-            default -> status.is5xxServerError() ? ErrorCode.INTERNAL_SERVER_ERROR : ErrorCode.INVALID_REQUEST;
+            default -> status.is5xxServerError()
+                    ? ErrorCode.INTERNAL_SERVER_ERROR
+                    : ErrorCode.INVALID_REQUEST;
         };
         if (status.is5xxServerError()) {
             log.error("Spring MVC 요청 처리 중 서버 오류가 발생했습니다.", exception);

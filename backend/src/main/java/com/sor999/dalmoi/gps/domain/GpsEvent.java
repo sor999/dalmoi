@@ -79,7 +79,8 @@ public class GpsEvent {
 
     public static GpsEvent create(UUID eventId, SessionParticipant participant, long sequence, long ingestOrder,
             Point location, double accuracyMeters, Instant recordedAt, Instant receivedAt) {
-        return builder().eventId(eventId)
+        return builder()
+                .eventId(eventId)
                 .participant(participant)
                 .sequence(sequence)
                 .ingestOrder(ingestOrder)

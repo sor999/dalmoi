@@ -66,7 +66,8 @@ public class Course {
 
     public static Course create(Member creator, String title, LineString route, double estimatedDistanceMeters,
             boolean loop) {
-        return builder().creator(creator)
+        return builder()
+                .creator(creator)
                 .title(title)
                 .route(route)
                 .estimatedDistanceMeters(estimatedDistanceMeters)

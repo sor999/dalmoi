@@ -56,7 +56,8 @@ public class RunningRecord {
 
     public static RunningRecord create(SessionParticipant participant, double distanceMeters, long durationSeconds,
             String calculationVersion) {
-        return builder().participant(participant)
+        return builder()
+                .participant(participant)
                 .distanceMeters(distanceMeters)
                 .durationSeconds(durationSeconds)
                 .calculationVersion(calculationVersion)
