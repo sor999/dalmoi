@@ -6,9 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class DalmoiApplication {
 
-
-	static void main(String[] args) {
-		SpringApplication.run(DalmoiApplication.class, args);
-	}
+    static void main(String[] args) {
+        SpringApplication.run(DalmoiApplication.class, args);
+    }
 
 }

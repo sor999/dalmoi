@@ -13,33 +13,26 @@ public enum ErrorCode {
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "요청한 리소스를 찾을 수 없습니다."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 메서드입니다."),
     NOT_ACCEPTABLE(HttpStatus.NOT_ACCEPTABLE, "NOT_ACCEPTABLE", "지원하지 않는 응답 형식입니다."),
-    UNSUPPORTED_MEDIA_TYPE(
-            HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 요청 형식입니다."),
+    UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 요청 형식입니다."),
     DATA_CONFLICT(HttpStatus.CONFLICT, "DATA_CONFLICT", "요청이 현재 데이터와 충돌합니다."),
-    INTERNAL_SERVER_ERROR(
-            HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."),
 
     // 인증
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "로그인이 필요합니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
-    INVALID_ACCESS_TOKEN(
-            HttpStatus.UNAUTHORIZED, "INVALID_ACCESS_TOKEN", "인증 토큰이 유효하지 않거나 만료되었습니다."),
+    INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_ACCESS_TOKEN", "인증 토큰이 유효하지 않거나 만료되었습니다."),
     INVALID_AUTH_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_AUTH_REQUEST", "인증 요청을 확인해 주세요."),
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "EMAIL_ALREADY_EXISTS", "이미 사용 중인 이메일입니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "이메일 또는 비밀번호를 확인해 주세요."),
-    INVALID_REFRESH_TOKEN(
-            HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "유효하지 않은 Refresh Token입니다."),
-    EXPIRED_REFRESH_TOKEN(
-            HttpStatus.UNAUTHORIZED, "EXPIRED_REFRESH_TOKEN", "Refresh Token이 만료되었습니다."),
-    REVOKED_REFRESH_TOKEN(
-            HttpStatus.UNAUTHORIZED, "REVOKED_REFRESH_TOKEN", "폐기된 Refresh Token입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "유효하지 않은 Refresh Token입니다."),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "EXPIRED_REFRESH_TOKEN", "Refresh Token이 만료되었습니다."),
+    REVOKED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "REVOKED_REFRESH_TOKEN", "폐기된 Refresh Token입니다."),
 
     // 회원
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_NOT_FOUND", "회원을 찾을 수 없습니다."),
 
     // 코스
-    COURSE_TOO_FEW_POINTS(
-            HttpStatus.BAD_REQUEST, "COURSE_TOO_FEW_POINTS", "경로를 그려 주세요. 출발점과 도착점이 필요해요."),
+    COURSE_TOO_FEW_POINTS(HttpStatus.BAD_REQUEST, "COURSE_TOO_FEW_POINTS", "경로를 그려 주세요. 출발점과 도착점이 필요해요."),
     COURSE_TOO_MANY_POINTS(HttpStatus.BAD_REQUEST, "COURSE_TOO_MANY_POINTS", "코스 좌표는 최대 50개입니다."),
     COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "COURSE_NOT_FOUND", "코스를 찾을 수 없습니다."),
     COURSE_NOT_ACCESSIBLE(HttpStatus.FORBIDDEN, "COURSE_NOT_ACCESSIBLE", "코스에 접근할 수 없습니다."),
@@ -57,8 +50,7 @@ public enum ErrorCode {
     ALREADY_PARTICIPATING(HttpStatus.CONFLICT, "ALREADY_PARTICIPATING", "이미 참여한 러닝입니다."),
     NO_PARTICIPANTS(HttpStatus.CONFLICT, "NO_PARTICIPANTS", "참가자가 필요합니다."),
     SESSION_NOT_RUNNING(HttpStatus.CONFLICT, "SESSION_NOT_RUNNING", "진행 중인 러닝이 아닙니다."),
-    ALREADY_RUNNING_OTHER_SESSION(
-            HttpStatus.CONFLICT, "ALREADY_RUNNING_OTHER_SESSION", "이미 다른 러닝에서 주행 중입니다."),
+    ALREADY_RUNNING_OTHER_SESSION(HttpStatus.CONFLICT, "ALREADY_RUNNING_OTHER_SESSION", "이미 다른 러닝에서 주행 중입니다."),
     ACTIVE_PARTICIPANTS_EXIST(HttpStatus.CONFLICT, "ACTIVE_PARTICIPANTS_EXIST", "주행 중인 참가자가 있습니다."),
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "SESSION_NOT_FOUND", "러닝을 찾을 수 없습니다."),
     NOT_SESSION_PARTICIPANT(HttpStatus.FORBIDDEN, "NOT_SESSION_PARTICIPANT", "해당 러닝의 참가자가 아닙니다."),

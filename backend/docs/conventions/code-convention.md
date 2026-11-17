@@ -78,6 +78,65 @@
 - 불필요한 주석과 과도한 추상화를 만들지 않는다.
 - 예외적인 설계 선택은 이유가 드러나도록 기록한다.
 
+### 8.1 빈 줄과 선언 줄바꿈
+
+- 각 필드는 별도 줄에 선언하고, 필드 선언이 끝난 뒤 다음 필드까지 빈 줄을 정확히 한 줄 둔다. 다음 필드에 애너테이션이 있으면 그 애너테이션 앞에 빈 줄을 둔다.
+- 마지막 필드 선언과 생성자·메서드·중첩 타입 선언 사이에도 빈 줄을 한 줄 둔다.
+- 생성자·메서드가 끝난 뒤 다음 멤버 선언까지 빈 줄을 한 줄 둔다. 본문이 없는 인터페이스 메서드 선언 사이에도 동일하게 적용한다.
+- 애너테이션은 각각 별도 줄에 작성하며, 연속된 애너테이션 사이와 마지막 애너테이션·적용 대상 선언 사이에는 빈 줄을 넣지 않는다.
+- 생성자·메서드 본문은 한 줄로 압축하지 않는다. 여는 중괄호 뒤에서 줄을 바꾸고, 본문과 닫는 중괄호를 별도 줄에 작성한다.
+- 이 규칙은 프로덕션 코드, 테스트 및 Fixture에 동일하게 적용하며 빈 줄을 여러 줄 연속으로 넣지 않는다.
+
+```java
+@Service
+@RequiredArgsConstructor
+public class MemberService {
+
+    private final MemberRepository memberRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
+    public boolean existsByEmail(String email) {
+        return memberRepository.existsByEmail(email);
+    }
+
+    public String encodePassword(String password) {
+        return passwordEncoder.encode(password);
+    }
+}
+```
+
+### 8.2 본문 가독성과 긴 줄 처리
+
+- 새 코드를 작성하거나 기존 코드를 수정할 때 8.1과 이 절의 줄바꿈 규칙을 함께 적용한다.
+- 메서드 본문은 입력 검증, 데이터 조회, 상태 변경·저장, 응답 생성 등 의미가 달라지는 구간 사이에 빈 줄을 한 줄 넣는다. 서로 밀접한 짧은 문장은 함께 둔다.
+- 조건문·반복문·예외 처리도 한 줄로 압축하지 않고 중괄호 내부를 여러 줄로 작성한다.
+- 불필요한 줄바꿈을 지양하고, 의미 단위로 줄바꿈한다. 기존에 가독성을 위해 나눈 줄을 글자 수에 여유가 있다는 이유로 합치지 않는다.
+- 이넘은 상수마다 별도 줄에 작성한다. 에러 코드의 상태·코드·메시지는 한 항목으로 읽을 수 있도록 같은 줄에 유지한다.
+- 빌더 체인은 길이와 관계없이 `builder()` 이후 각 설정 호출과 `build()`를 별도 줄에 작성한다.
+- 메서드 선언은 `throws` 절까지 가능한 한 한 줄에 작성한다. 선언이 길어 읽기 어려울 때만 파라미터나 `throws` 절을 줄바꿈한다.
+- 메서드 호출의 여는 괄호와 첫 번째 인자는 가능한 한 같은 줄에 둔다. 예를 들어 `mockMvc.perform(post("/test/errors/body")`에서 `perform(` 직후에 불필요한 줄바꿈을 넣지 않는다.
+- 긴 메서드 선언·호출은 파라미터나 인자 등 의미 단위로 나누고 같은 수준의 들여쓰기를 맞춘다. 긴 메서드 체인은 호출 단위로 줄을 바꾼다.
+- 자동 포매터의 줄 길이 기준은 120자로 두되, 글자 수를 기계적으로 맞추기 위해 `throws` 절이나 짧은 첫 번째 인자를 별도 줄로 떼지 않는다. 문자열·정규식 등 값의 의미도 바꾸지 않는다.
+- 줄바꿈을 맞추기 위해 로직, 검증 조건, 실행 순서나 반환값을 변경하지 않는다.
+
+```java
+void handleExceptionInternal_invalidBody_returnsInvalidRequest(String body) throws Exception {
+    mockMvc.perform(post("/test/errors/body")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
+            .andExpect(status().isBadRequest());
+}
+```
+
+### 8.3 자동 포맷과 검사
+
+- 구현 후 `backend/`에서 `./gradlew spotlessApply`로 포맷하고 `./gradlew spotlessCheck checkstyleMain checkstyleTest`로 검사한다.
+- 포맷 규칙의 실행 기준은 `config/formatter/eclipse.xml`, 검사 기준은 `config/checkstyle/checkstyle.xml`이다. IDE에도 같은 Eclipse 프로필을 사용한다.
+- 최초 체크아웃에서는 저장소 루트에서 `./scripts/install-git-hooks.sh`로 커밋 훅을 설치한다. 설치 절차와 부분 스테이징 검사는 [코드 형식 자동화](code-formatting.md)를 따른다.
+- 의미 단위별 빈 줄은 자동 검사로 판단하지 않으며 코드 리뷰에서 확인한다. 포매터는 기존 본문의 빈 줄을 보존한다.
+- 팀 컨벤션과 자동 포매터가 충돌하면 설정과 대표 예제를 함께 수정하고, 반복 실행해도 결과가 바뀌지 않는지 확인한다.
+
 ## 9. 검증 및 문서
 
 - 변경 전후 API 계약, 권한 검증, 트랜잭션과 데이터 정합성 영향을 확인한다.

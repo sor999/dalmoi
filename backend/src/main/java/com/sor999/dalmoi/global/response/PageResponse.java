@@ -6,7 +6,6 @@ import org.springframework.data.domain.Slice;
 public record PageResponse<T>(List<T> items, int page, int size, boolean hasNext) {
 
     public static <T> PageResponse<T> from(Slice<T> slice) {
-        return new PageResponse<>(
-                slice.getContent(), slice.getNumber(), slice.getSize(), slice.hasNext());
+        return new PageResponse<>(slice.getContent(), slice.getNumber(), slice.getSize(), slice.hasNext());
     }
 }

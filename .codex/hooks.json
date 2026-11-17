@@ -1,0 +1,17 @@
+{
+  "description": "작업 종료 전 변경 영역의 형식과 스타일 검사",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/check_style.py\"",
+            "timeout": 270,
+            "statusMessage": "변경 영역의 코드 형식 검사 중"
+          }
+        ]
+      }
+    ]
+  }
+}
