@@ -29,7 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({GlobalExceptionHandler.class, GlobalExceptionHandlerTest.TestController.class})
 class GlobalExceptionHandlerTest {
 
-    @Autowired private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
     @Test
     @DisplayName("비즈니스 예외는 지정한 HTTP 상태와 코드, 메시지를 반환한다")
@@ -46,10 +47,9 @@ class GlobalExceptionHandlerTest {
     @ValueSource(strings = {"{", "{}", "{\"name\":\"\"}"})
     @DisplayName("JSON 파싱 오류와 요청 DTO 검증 실패는 동일한 오류 형식을 반환한다")
     void handleExceptionInternal_invalidBody_returnsInvalidRequest(String body) throws Exception {
-        mockMvc.perform(
-                        post("/test/errors/body")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(body))
+        mockMvc.perform(post("/test/errors/body")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
@@ -59,8 +59,7 @@ class GlobalExceptionHandlerTest {
     @ParameterizedTest(name = "잘못된 쿼리 요청: {0}")
     @ValueSource(strings = {"/test/errors/parameter", "/test/errors/parameter?count=abc"})
     @DisplayName("필수 파라미터 누락과 타입 불일치는 400을 반환한다")
-    void handleExceptionInternal_invalidParameter_returnsInvalidRequest(String path)
-            throws Exception {
+    void handleExceptionInternal_invalidParameter_returnsInvalidRequest(String path) throws Exception {
         mockMvc.perform(get(path))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
@@ -85,8 +84,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     @DisplayName("지원하지 않는 요청 형식은 415를 반환한다")
-    void handleExceptionInternal_unsupportedMediaType_returnsUnsupportedMediaType()
-            throws Exception {
+    void handleExceptionInternal_unsupportedMediaType_returnsUnsupportedMediaType() throws Exception {
         mockMvc.perform(post("/test/errors/body").contentType(MediaType.TEXT_PLAIN).content("name"))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_MEDIA_TYPE"));
