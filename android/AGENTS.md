@@ -1,6 +1,14 @@
-# Android 작업 라우팅
+# Android 작업 지침
 
-- 공통 규칙: [루트 지침](../AGENTS.md)을 먼저 확인합니다.
-- 앱 구조·코드 작성: [Android 개발 컨벤션](docs/conventions/code-convention.md)을 따릅니다.
-- 포맷·훅·CI: [코드 형식 자동화](docs/conventions/code-formatting.md)를 따릅니다.
-- 현재 구성·작업 원칙·검증: [Android 작업 규칙](docs/conventions/working-rules.md)을 따릅니다.
+상위 [공통 지침](../AGENTS.md)을 함께 따릅니다. 이 폴더는 Android 앱 영역이며 Spring Boot 서버의 코드·테스트 컨벤션은 적용하지 않습니다.
+
+- 현재 앱 소스와 Android 앱 모듈은 없으며, 코드 형식 검사 전용 Gradle 설정만 구성되어 있습니다. 구체적인 앱 구현 요청이 있을 때 앱을 구성하며, 형식 도구만을 이유로 앱을 생성하지 않습니다.
+- 신규 앱의 기본 스택·MVVM·코드 작성 규칙은 [Android 개발 컨벤션](docs/conventions/code-convention.md)을 따릅니다. 프로젝트가 구성되면 실제 Gradle 설정과 호환성을 확인하며, 라이브러리 버전·SDK 범위는 이 문서만으로 확정하지 않습니다.
+- 기존 패키지, UI, 상태 관리 및 테스트 구조를 우선하며 Android 프로젝트의 wrapper를 사용합니다.
+- 서버 API를 사용하는 작업은 요청·응답 계약과 인증·오류 처리의 호환성을 확인합니다.
+- 변경 범위에 맞춰 단위 테스트, lint, 빌드 및 필요한 기기·에뮬레이터 검증을 선택하고 실제 수행 결과를 보고합니다.
+- `local.properties`, 서명 키 및 자격 증명을 커밋하지 않습니다.
+
+커밋·이슈·PR 규칙은 저장소 루트의 공통 스킬과 템플릿을 따릅니다.
+
+- 포맷·훅·CI 검증은 [코드 형식 자동화](docs/conventions/code-formatting.md)를 따릅니다.
