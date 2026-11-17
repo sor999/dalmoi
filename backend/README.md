@@ -68,3 +68,30 @@ DB 없이 예외 응답 계약을 검증하려면 다음 명령을 실행합니�
 ```bash
 ./gradlew test --tests '*GlobalExceptionHandlerTest'
 ```
+
+## 공통 성공 응답
+
+성공 응답을 반환하는 컨트롤러에서 `ApiResponse.of(data)`를 사용하면 다음과 같이 `data` 필드로 감쌉니다. 자동으로 모든 응답을 감싸는 설정은 아닙니다.
+
+```json
+{
+  "data": {
+    "id": 1
+  }
+}
+```
+
+목록 조회의 `Slice<T>`는 `PageResponse.from(slice)`로 변환하고 `ApiResponse.of(...)`로 감쌀 수 있습니다. 페이지 번호는 0부터 시작하며 `size`는 요청한 페이지 크기입니다. 전체 개수 조회 없이 `hasNext`로 다음 페이지 유무를 제공합니다.
+
+```json
+{
+  "data": {
+    "items": [],
+    "page": 0,
+    "size": 20,
+    "hasNext": false
+  }
+}
+```
+
+오류 응답은 기존 `code`, `message` 형식을 유지하며 `data`로 감싸지 않습니다.
