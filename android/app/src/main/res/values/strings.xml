@@ -9,6 +9,22 @@
     <string name="auth_password">비밀번호</string>
     <string name="auth_signup">회원가입</string>
     <string name="course_back">뒤로</string>
+    <string name="course_kilometers">km</string>
+    <string name="course_title">코스 만들기</string>
+    <string name="crew_company_members">멤버 7명</string>
+    <string name="crew_join">초대코드로 가입</string>
+    <string name="crew_owner_members">크루장 · 멤버 4명</string>
+    <string name="home_enter">대기방 입장</string>
+    <string name="home_greeting">안녕하세요, 민준님</string>
+    <string name="home_my_courses">내 코스</string>
+    <string name="home_my_crews">내 크루</string>
+    <string name="home_run_description">새벽 한강 크루 · 반포 한강 루프 5.24 km</string>
+    <string name="home_total_courses">전체 3</string>
+    <string name="home_total_crews">전체 2</string>
+    <string name="home_waiting">대기 중인 그룹 러닝</string>
     <string name="map_add_point">경유지 추가</string>
     <string name="map_description">예시 코스 지도</string>
+    <string name="run_participant_count">참가 3 / 4명</string>
+    <string name="sample_company_crew">회사 점심런</string>
+    <string name="sample_crew">새벽 한강 크루</string>
 </resources>
