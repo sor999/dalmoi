@@ -88,6 +88,84 @@ class DalmoiDemoViewModel(initialState: DalmoiUiState = DalmoiUiState()) : ViewM
         _uiState.update { it.copy(authError = !valid, password = if (valid) "" else it.password) }
         return valid
     }
+    fun selectCourse(id: String) {
+        _uiState.update { state -> if (state.courses.any { it.id == id }) state.copy(selectedCourseId = id) else state }
+    }
+    fun changeDraftName(value: String) {
+        _uiState.update { it.copy(draftName = value, draftError = null) }
+    }
+    fun addPoint(point: MapPoint) {
+        if (!point.x.isFinite() || !point.y.isFinite()) return
+        _uiState.update { state ->
+            if (state.draftPoints.size >= 50) {
+                state.copy(draftError = DraftError.PointLimit)
+            } else {
+                withPoints(
+                    state,
+                    state.draftPoints + MapPoint(
+                        point.x.coerceIn(
+                            0f,
+                            360f,
+                        ),
+                        point.y.coerceIn(
+                            0f,
+                            800f,
+                        ),
+                    ),
+                )
+            }
+        }
+    }
+    fun undoPoint() {
+        _uiState.update { withPoints(it, it.draftPoints.dropLast(1)) }
+    }
+    fun resetDraft() {
+        _uiState.update { withPoints(it, emptyList()) }
+    }
+    fun validateDraft(): Boolean {
+        if (uiState.value.draftPoints.size >= 2) return true
+        _uiState.update { it.copy(draftError = DraftError.TooFewPoints) }
+        return false
+    }
+    fun saveDemoCourse(): Boolean {
+        if (!validateDraft()) return false
+        if (uiState.value.draftName.isBlank()) {
+            _uiState.update { it.copy(draftError = DraftError.NameRequired) }
+            return false
+        }
+        _uiState.update { state ->
+            val course = CourseCardData(
+                "local-${state.courses.size}",
+                state.draftName.trim(),
+                state.draftDistanceMeters,
+
+                createdOn = LocalDate.now(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("yyyy.MM.dd")),
+
+                points = state.draftPoints.toList(),
+            )
+            state.copy(courses = state.courses + course, selectedCourseId = course.id, draftError = null)
+        }
+        return true
+    }
+    private fun withPoints(state: DalmoiUiState, points: List<MapPoint>): DalmoiUiState {
+        // Schematic preview scale only. Geographic measurement requires an actual map SDK.
+        val meters = points.zipWithNext().sumOf { (
+            a,
+            b,
+        ),
+            ->
+            hypot(
+                (a.x - b.x).toDouble(),
+                (a.y - b.y).toDouble(),
+            ) * 5.48
+        }.roundToInt()
+        return state.copy(
+            draftPoints = points,
+            draftDistanceMeters = meters,
+            draftEdited = true,
+            draftError = null,
+        )
+    }
 }
 
 fun kilometers(meters: Int): String = String.format(Locale.ROOT, "%.2f", meters / 1000.0)
