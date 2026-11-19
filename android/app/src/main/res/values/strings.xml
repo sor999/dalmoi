@@ -1,5 +1,13 @@
 <resources>
     <string name="app_name">달모이</string>
+    <string name="auth_email">이메일</string>
+    <string name="auth_error">이메일 또는 비밀번호를 확인해 주세요.</string>
+    <string name="auth_first">처음이신가요?</string>
+    <string name="auth_headline">내가 만든 코스로\n크루와 함께 달리기</string>
+    <string name="auth_login">로그인</string>
+    <string name="auth_nickname">닉네임</string>
+    <string name="auth_password">비밀번호</string>
+    <string name="auth_signup">회원가입</string>
     <string name="course_back">뒤로</string>
     <string name="map_add_point">경유지 추가</string>
     <string name="map_description">예시 코스 지도</string>

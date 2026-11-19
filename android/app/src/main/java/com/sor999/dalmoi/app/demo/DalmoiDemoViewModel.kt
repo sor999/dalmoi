@@ -67,6 +67,27 @@ data class DalmoiUiState(
 class DalmoiDemoViewModel(initialState: DalmoiUiState = DalmoiUiState()) : ViewModel() {
     private val _uiState = MutableStateFlow(initialState)
     val uiState = _uiState.asStateFlow()
+
+    fun changeEmail(value: String) {
+        _uiState.update { it.copy(email = value, authError = false) }
+    }
+    fun changePassword(value: String) {
+        _uiState.update { it.copy(password = value, authError = false) }
+    }
+    fun changeNickname(value: String) {
+        _uiState.update { it.copy(nickname = value) }
+    }
+    fun selectSignup(value: Boolean) {
+        _uiState.update { it.copy(signingUp = value, authError = false) }
+    }
+    fun enterDemo(): Boolean {
+        val state = uiState.value
+        val valid =
+            state.email.contains('@') && state.password.isNotBlank() &&
+                (!state.signingUp || state.nickname.isNotBlank())
+        _uiState.update { it.copy(authError = !valid, password = if (valid) "" else it.password) }
+        return valid
+    }
 }
 
 fun kilometers(meters: Int): String = String.format(Locale.ROOT, "%.2f", meters / 1000.0)
