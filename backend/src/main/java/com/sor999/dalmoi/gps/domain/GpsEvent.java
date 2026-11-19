@@ -9,15 +9,20 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.locationtech.jts.geom.Point;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "gps_events", uniqueConstraints = {
@@ -25,7 +30,10 @@ import org.locationtech.jts.geom.Point;
         @UniqueConstraint(name = "uq_gps_events_participant_ingest", columnNames = {"participant_id", "ingest_order"})})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class GpsEvent {
+public class GpsEvent implements Persistable<UUID> {
+
+    @Transient
+    private boolean newEvent = true;
 
     @Id
     @Column(name = "event_id")
@@ -77,6 +85,33 @@ public class GpsEvent {
         this.validationStatus = GpsValidationStatus.PENDING;
     }
 
+    public void validate(Instant now) {
+        if (validationStatus != GpsValidationStatus.PENDING) {
+            return;
+        }
+
+        validationStatus = GpsValidationStatus.VALID;
+        processedAt = now;
+    }
+
+    public void reject(String reason, Instant now) {
+        if (validationStatus != GpsValidationStatus.PENDING) {
+            return;
+        }
+
+        validationStatus = GpsValidationStatus.REJECTED;
+        rejectionReason = reason;
+        processedAt = now;
+    }
+
+    public boolean matches(long sequence, double latitude, double longitude, double accuracyMeters,
+            Instant recordedAt) {
+        return this.sequence == sequence && Double.compare(location.getY(), latitude) == 0
+                && Double.compare(location.getX(), longitude) == 0
+                && Double.compare(this.accuracyMeters, accuracyMeters) == 0
+                && this.recordedAt.equals(recordedAt.truncatedTo(ChronoUnit.MICROS));
+    }
+
     public static GpsEvent create(UUID eventId, SessionParticipant participant, long sequence, long ingestOrder,
             Point location, double accuracyMeters, Instant recordedAt, Instant receivedAt) {
         return builder()
@@ -89,6 +124,22 @@ public class GpsEvent {
                 .recordedAt(recordedAt)
                 .receivedAt(receivedAt)
                 .build();
+    }
+
+    @Override
+    public UUID getId() {
+        return eventId;
+    }
+
+    @Override
+    public boolean isNew() {
+        return newEvent;
+    }
+
+    @PostLoad
+    @PostPersist
+    private void markPersisted() {
+        newEvent = false;
     }
 
     public Point getLocation() {
