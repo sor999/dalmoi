@@ -30,6 +30,8 @@ logging:
     org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:WARN}
 
 dalmoi:
+  record:
+    worker-enabled: ${RECORD_WORKER_ENABLED:true}
   auth:
     secret: ${JWT_SECRET:}
     issuer: dalmoi
