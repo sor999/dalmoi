@@ -1,10 +1,9 @@
 plugins {
+    alias(libs.plugins.kotlin.serialization) apply false
     base
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.spotless)
-}
-
-repositories {
-    mavenCentral()
 }
 
 spotless {

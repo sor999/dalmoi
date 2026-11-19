@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">달모이</string>
+    <string name="course_back">뒤로</string>
+    <string name="map_add_point">경유지 추가</string>
+    <string name="map_description">예시 코스 지도</string>
+</resources>
