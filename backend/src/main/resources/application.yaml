@@ -29,6 +29,13 @@ logging:
   level:
     org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:WARN}
 
+dalmoi:
+  auth:
+    secret: ${JWT_SECRET:}
+    issuer: dalmoi
+    access-ttl: ${ACCESS_TOKEN_TTL:30m}
+    refresh-ttl: ${REFRESH_TOKEN_TTL:14d}
+
 springdoc:
   api-docs:
     enabled: ${SWAGGER_ENABLED:true}

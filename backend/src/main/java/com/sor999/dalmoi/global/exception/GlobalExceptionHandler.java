@@ -1,6 +1,8 @@
 package com.sor999.dalmoi.global.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +38,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             log.error("Spring MVC 요청 처리 중 서버 오류가 발생했습니다.", exception);
         }
         return super.handleExceptionInternal(exception, ErrorResponse.from(errorCode), headers, status, request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataConflict(DataIntegrityViolationException exception) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException violation
+                    && "uq_members_email".equals(violation.getConstraintName())) {
+                ErrorCode errorCode = ErrorCode.EMAIL_ALREADY_EXISTS;
+                return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.from(errorCode));
+            }
+            cause = cause.getCause();
+        }
+        return handleUnexpectedException(exception);
     }
 
     @ExceptionHandler(Exception.class)
