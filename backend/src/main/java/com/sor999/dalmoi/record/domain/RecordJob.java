@@ -55,18 +55,48 @@ public class RecordJob {
     private Instant completedAt;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private RecordJob(SessionParticipant participant, long cutoffIngestOrder) {
+    private RecordJob(SessionParticipant participant, long cutoffIngestOrder, Instant now) {
         this.participant = participant;
         this.status = RecordJobStatus.PROCESSING;
         this.cutoffIngestOrder = cutoffIngestOrder;
-        this.requestedAt = Instant.now();
+        this.requestedAt = now;
         this.updatedAt = this.requestedAt;
     }
 
+    public void complete(Instant now) {
+        status = RecordJobStatus.COMPLETED;
+        completedAt = now;
+        updatedAt = now;
+        attemptCount++;
+        errorCode = null;
+    }
+
+    public void fail(Instant now) {
+        if (status != RecordJobStatus.PROCESSING) {
+            return;
+        }
+        attemptCount++;
+        updatedAt = now;
+        errorCode = "RECORD_PROCESSING_FAILED";
+        if (attemptCount >= 3) {
+            status = RecordJobStatus.FAILED;
+        }
+    }
+
+    public boolean ready(Instant now) {
+        return status == RecordJobStatus.PROCESSING
+                && (attemptCount == 0 || !updatedAt.plusSeconds(5).isAfter(now));
+    }
+
     public static RecordJob create(SessionParticipant participant, long cutoffIngestOrder) {
+        return create(participant, cutoffIngestOrder, Instant.now());
+    }
+
+    public static RecordJob create(SessionParticipant participant, long cutoffIngestOrder, Instant now) {
         return builder()
                 .participant(participant)
                 .cutoffIngestOrder(cutoffIngestOrder)
+                .now(now)
                 .build();
     }
 }

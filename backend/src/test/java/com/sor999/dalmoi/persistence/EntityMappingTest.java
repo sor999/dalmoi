@@ -7,6 +7,7 @@ import com.sor999.dalmoi.crew.domain.CrewMember;
 import com.sor999.dalmoi.fixture.MemberFixture;
 import com.sor999.dalmoi.gps.domain.GpsEvent;
 import com.sor999.dalmoi.gps.domain.GpsValidationStatus;
+import com.sor999.dalmoi.gps.repository.GpsEventRepository;
 import com.sor999.dalmoi.member.domain.Member;
 import com.sor999.dalmoi.member.domain.MemberCredential;
 import com.sor999.dalmoi.record.domain.RecordJob;
@@ -18,6 +19,10 @@ import com.sor999.dalmoi.session.domain.SessionParticipant;
 import com.sor999.dalmoi.session.domain.SessionStatus;
 import com.sor999.dalmoi.support.PostgresIntegrationTest;
 import jakarta.persistence.EntityManager;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.UUID;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,13 +32,10 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,6 +51,9 @@ class EntityMappingTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private GpsEventRepository gpsEventRepository;
 
     @Test
     @DisplayName("엔티티와 공간 좌표 및 공유 기본키를 저장하고 다시 조회한다")
@@ -71,7 +76,7 @@ class EntityMappingTest {
 
         jdbcTemplate.update(
                 "UPDATE session_participants SET status = 'FINISHED', started_at = ?, ended_at = ? WHERE id = ?",
-                java.sql.Timestamp.from(issuedAt), java.sql.Timestamp.from(issuedAt.plusSeconds(60)),
+                Timestamp.from(issuedAt), Timestamp.from(issuedAt.plusSeconds(60)),
                 participant.getId());
 
         RecordJob job = persist(RecordJob.create(participant, 1));
@@ -138,10 +143,8 @@ class EntityMappingTest {
 
         String wkt = pointCount == 1 ? "LINESTRING(126.93 37.52)" : route(pointCount).toText();
 
-        assertThatThrownBy(() -> jdbcTemplate.update(
-                "UPDATE courses SET route = ST_GeomFromText(?, 4326) WHERE id = ?",
-                wkt, course.getId()))
-                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE courses SET route = ST_GeomFromText(?, 4326) WHERE id = ?",
+                wkt, course.getId())).isInstanceOf(DataAccessException.class);
     }
 
     @Test
@@ -153,8 +156,7 @@ class EntityMappingTest {
 
         assertThatThrownBy(() -> jdbcTemplate.update(
                 "UPDATE courses SET route = ST_GeomFromText('LINESTRING(126 37,181 38)',4326) WHERE id = ?",
-                course.getId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                course.getId())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -167,9 +169,8 @@ class EntityMappingTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> jdbcTemplate.update(
-                "INSERT INTO crew_members(crew_id, member_id, joined_at) VALUES (?, ?, now())",
-                crew.getId(), member.getId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                "INSERT INTO crew_members(crew_id, member_id, joined_at) VALUES (?, ?, now())", crew.getId(),
+                member.getId())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -204,10 +205,8 @@ class EntityMappingTest {
 
         entityManager.flush();
 
-        assertThatThrownBy(() -> jdbcTemplate.update(
-                "UPDATE session_participants SET status = 'RUNNING' WHERE id = ?",
-                participant.getId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE session_participants SET status = 'RUNNING' WHERE id = ?",
+                participant.getId())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -217,7 +216,8 @@ class EntityMappingTest {
         Course course = persist(Course.create(member, "코스", route(2), 0, false));
         Crew crew = persist(Crew.create(member, "달모이", "INVITE"));
         RunningSession first = persist(RunningSession.create(crew, member, course, "첫 러닝"));
-        RunningSession second = persist(RunningSession.create(crew, member, course, "둘째 러닝"));
+        Crew otherCrew = persist(Crew.create(member, "다른 크루", "OTHERINVITE"));
+        RunningSession second = persist(RunningSession.create(otherCrew, member, course, "둘째 러닝"));
         SessionParticipant firstParticipant = persist(SessionParticipant.create(first, member));
         SessionParticipant secondParticipant = persist(SessionParticipant.create(second, member));
 
@@ -228,28 +228,22 @@ class EntityMappingTest {
 
         assertThatThrownBy(() -> jdbcTemplate.update(
                 "UPDATE session_participants SET status = 'RUNNING', started_at = now() WHERE id = ?",
-                secondParticipant.getId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                secondParticipant.getId())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
-    @DisplayName("한 크루에서 두 그룹 러닝을 동시에 진행할 수 없다")
-    void updateSession_multipleRunningSessionsForCrew_throwsException() {
+    @DisplayName("한 크루에서 대기 또는 진행 러닝을 두 개 생성할 수 없다")
+    void insertSession_multipleActiveSessionsForCrew_throwsException() {
         Member member = persistMember();
         Course course = persist(Course.create(member, "코스", route(2), 0, false));
         Crew crew = persist(Crew.create(member, "달모이", "INVITE"));
         RunningSession first = persist(RunningSession.create(crew, member, course, "첫 러닝"));
-        RunningSession second = persist(RunningSession.create(crew, member, course, "둘째 러닝"));
-
         entityManager.flush();
-
-        jdbcTemplate.update("UPDATE running_sessions SET status = 'RUNNING', started_at = now() WHERE id = ?",
-                first.getId());
-
-        assertThatThrownBy(() -> jdbcTemplate.update(
-                "UPDATE running_sessions SET status = 'RUNNING', started_at = now() WHERE id = ?",
-                second.getId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(first.getStatus()).isEqualTo(SessionStatus.WAITING);
+        assertThatThrownBy(() -> {
+            persist(RunningSession.create(crew, member, course, "둘째 러닝"));
+            entityManager.flush();
+        }).isInstanceOf(ConstraintViolationException.class);
     }
 
     @Test
