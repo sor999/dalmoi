@@ -25,6 +25,12 @@ spring:
   flyway:
     validate-migration-naming: true
 
+spring.data.redis:
+  host: ${REDIS_HOST:localhost}
+  port: ${REDIS_PORT:6379}
+  connect-timeout: 2s
+  timeout: 2s
+
 logging:
   level:
     org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:WARN}
