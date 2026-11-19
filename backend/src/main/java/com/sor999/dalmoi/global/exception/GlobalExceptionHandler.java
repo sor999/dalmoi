@@ -44,10 +44,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDataConflict(DataIntegrityViolationException exception) {
         Throwable cause = exception;
         while (cause != null) {
-            if (cause instanceof ConstraintViolationException violation
-                    && "uq_members_email".equals(violation.getConstraintName())) {
-                ErrorCode errorCode = ErrorCode.EMAIL_ALREADY_EXISTS;
-                return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.from(errorCode));
+            if (cause instanceof ConstraintViolationException violation) {
+                ErrorCode code = switch (violation.getConstraintName() == null ? "" : violation.getConstraintName()) {
+                    case "uq_members_email" -> ErrorCode.EMAIL_ALREADY_EXISTS;
+                    case "gps_events_pkey" -> ErrorCode.GPS_EVENT_CONFLICT;
+                    case "uq_gps_events_participant_sequence" -> ErrorCode.GPS_SEQUENCE_CONFLICT;
+                    default -> null;
+                };
+                if (code != null) {
+                    return ResponseEntity.status(code.getStatus()).body(ErrorResponse.from(code));
+                }
             }
             cause = cause.getCause();
         }
