@@ -104,6 +104,9 @@ class DalmoiDemoViewModel(initialState: DalmoiUiState = DalmoiUiState()) : ViewM
     fun nameCrew(value: String) {
         if (value.isNotBlank()) _uiState.update { it.copy(crewName = value.trim()) }
     }
+    fun nameRun(value: String) {
+        if (value.isNotBlank()) _uiState.update { it.copy(runName = value.trim()) }
+    }
     fun selectCourse(id: String) {
         _uiState.update { state -> if (state.courses.any { it.id == id }) state.copy(selectedCourseId = id) else state }
     }
