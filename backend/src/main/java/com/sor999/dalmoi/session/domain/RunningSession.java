@@ -3,6 +3,8 @@ package com.sor999.dalmoi.session.domain;
 import com.sor999.dalmoi.course.domain.Course;
 import com.sor999.dalmoi.crew.domain.Crew;
 import com.sor999.dalmoi.member.domain.Member;
+import com.sor999.dalmoi.global.exception.BusinessException;
+import com.sor999.dalmoi.global.exception.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -88,6 +90,32 @@ public class RunningSession {
         this.plannedLoop = course.isLoop();
         this.crewNameSnapshot = crew.getName();
         this.createdAt = Instant.now();
+    }
+
+    public void start(Instant now) {
+        if (status == SessionStatus.RUNNING) {
+            return;
+        }
+
+        if (status != SessionStatus.WAITING) {
+            throw new BusinessException(ErrorCode.INVALID_SESSION_STATE);
+        }
+
+        status = SessionStatus.RUNNING;
+        startedAt = now;
+    }
+
+    public void complete(Instant now) {
+        if (status == SessionStatus.COMPLETED) {
+            return;
+        }
+
+        if (status != SessionStatus.RUNNING) {
+            throw new BusinessException(ErrorCode.INVALID_SESSION_STATE);
+        }
+
+        status = SessionStatus.COMPLETED;
+        completedAt = now;
     }
 
     public static RunningSession create(Crew crew, Member createdBy, Course course, String title) {

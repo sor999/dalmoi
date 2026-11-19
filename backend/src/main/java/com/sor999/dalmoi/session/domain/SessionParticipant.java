@@ -1,6 +1,8 @@
 package com.sor999.dalmoi.session.domain;
 
 import com.sor999.dalmoi.member.domain.Member;
+import com.sor999.dalmoi.global.exception.BusinessException;
+import com.sor999.dalmoi.global.exception.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -58,6 +60,38 @@ public class SessionParticipant {
         this.member = member;
         this.status = ParticipantStatus.JOINED;
         this.joinedAt = Instant.now();
+    }
+
+    public void start(Instant now) {
+        if (status == ParticipantStatus.RUNNING) {
+            return;
+        }
+
+        if (status != ParticipantStatus.JOINED) {
+            throw new BusinessException(ErrorCode.PARTICIPANT_ALREADY_FINISHED);
+        }
+
+        status = ParticipantStatus.RUNNING;
+        startedAt = now;
+    }
+
+    public void finish(Instant now) {
+        if (status == ParticipantStatus.FINISHED) {
+            return;
+        }
+
+        if (status != ParticipantStatus.RUNNING) {
+            throw new BusinessException(ErrorCode.PARTICIPANT_NOT_RUNNING);
+        }
+
+        status = ParticipantStatus.FINISHED;
+        endedAt = now;
+    }
+
+    public void markAbsent() {
+        if (status == ParticipantStatus.JOINED) {
+            status = ParticipantStatus.ABSENT;
+        }
     }
 
     public static SessionParticipant create(RunningSession session, Member member) {
