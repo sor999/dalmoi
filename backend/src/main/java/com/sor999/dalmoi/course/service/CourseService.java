@@ -35,21 +35,6 @@ public class CourseService {
 
     @Transactional
     public CourseResponse create(Long memberId, CreateCourseRequest request) {
-        if (request.points().size() < 2) {
-            throw new BusinessException(ErrorCode.COURSE_TOO_FEW_POINTS);
-        }
-
-        if (request.points().size() > 50) {
-            throw new BusinessException(ErrorCode.COURSE_TOO_MANY_POINTS);
-        }
-
-        if (request.points()
-                .stream()
-                .anyMatch(p -> !Double.isFinite(p.latitude())
-                        || !Double.isFinite(p.longitude()) || Math.abs(p.latitude()) > 90
-                        || Math.abs(p.longitude()) > 180)) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST);
-        }
         LineString route = GeoSupport.route(request.points());
         Course course = Course.create(memberRepository.getReferenceById(memberId), request.title().strip(), route,
                 GeoSupport.length(route), GeoSupport.distance(route.getCoordinateN(0),

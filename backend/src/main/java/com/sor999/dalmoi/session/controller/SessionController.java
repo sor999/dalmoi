@@ -2,6 +2,7 @@ package com.sor999.dalmoi.session.controller;
 
 import com.sor999.dalmoi.global.response.ApiResponse;
 import com.sor999.dalmoi.session.service.SessionService;
+import com.sor999.dalmoi.session.domain.SessionStatus;
 import com.sor999.dalmoi.session.dto.SessionResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -41,7 +42,7 @@ public class SessionController {
     @GetMapping("/api/v1/crews/{crewId}/sessions")
     @Operation(summary = "크루 러닝 목록", description = "크루원만 조회할 수 있으며 status로 필터링합니다.")
     public ApiResponse<List<SessionResponse.Summary>> list(@CurrentMember Long memberId, @PathVariable Long crewId,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) SessionStatus status) {
         return ApiResponse.of(sessionService.list(memberId, crewId, status));
     }
 

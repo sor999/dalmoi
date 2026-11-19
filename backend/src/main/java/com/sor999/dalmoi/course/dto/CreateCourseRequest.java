@@ -7,5 +7,5 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record CreateCourseRequest(@NotBlank @Size(max = 100) String title,
-        @NotNull List<@NotNull @Valid CoordinateRequest> points, Double estimatedDistanceKm) {
+        @NotNull @Size(min = 2, max = 50) List<@NotNull @Valid CoordinateRequest> points, Double estimatedDistanceKm) {
 }
