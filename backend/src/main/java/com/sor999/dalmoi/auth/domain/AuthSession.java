@@ -1,6 +1,8 @@
 package com.sor999.dalmoi.auth.domain;
 
 import com.sor999.dalmoi.member.domain.Member;
+import com.sor999.dalmoi.global.exception.BusinessException;
+import com.sor999.dalmoi.global.exception.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -49,6 +51,22 @@ public class AuthSession {
         this.refreshTokenHash = refreshTokenHash;
         this.issuedAt = issuedAt;
         this.expiresAt = expiresAt;
+    }
+
+    public void validateRefresh(Instant now) {
+        if (revokedAt != null) {
+            throw new BusinessException(ErrorCode.REVOKED_REFRESH_TOKEN);
+        }
+
+        if (!expiresAt.isAfter(now)) {
+            throw new BusinessException(ErrorCode.EXPIRED_REFRESH_TOKEN);
+        }
+    }
+
+    public void revoke(Instant now) {
+        if (revokedAt == null) {
+            revokedAt = now;
+        }
     }
 
     public static AuthSession create(Member member, String refreshTokenHash, Instant issuedAt, Instant expiresAt) {
