@@ -1,5 +1,7 @@
 # 달모이(Dalmoi) 디자인 가이드
 
+[디자인 보기](https://www.figma.com/design/nJh1EjT7VOKrswZ6zLV3Pw/%EB%8B%AC%EB%AA%A8%EC%9D%B4Dalmoi?node-id=0-1&t=LwoQ47I4q2lCZWLP-0)
+
 ## 1. 적용 원칙과 디자인 방향
 
 이 문서는 달모이의 화면을 일관되게 설계하고 Android(Kotlin·Jetpack Compose)로 구현하기 위한 프로젝트 공통 기준이다. 색상·글꼴·간격·형태·컴포넌트·화면 구성은 이 문서의 역할별 규칙을 따른다. 아직 결정되지 않은 제품 동작과 세부 표현은 마지막의 ‘추가 결정 사항’에서 관리한다.
