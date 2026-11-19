@@ -65,6 +65,17 @@ class OpenApiConfigurationTest {
                 .andExpect(jsonPath("$.paths['/api/v1/swagger-public-probe'].get.security").isEmpty());
     }
 
+    @Test
+    @DisplayName("코스 좌표 개수와 비밀번호 바이트 제한을 요청 스키마에 반영한다")
+    void apiDocs_inputConstraints_describesRequestValidation() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.schemas.CreateCourseRequest.properties.points.minItems").value(2))
+                .andExpect(jsonPath("$.components.schemas.CreateCourseRequest.properties.points.maxItems").value(50))
+                .andExpect(jsonPath("$.components.schemas.LoginRequest.properties.password.description")
+                        .value("UTF-8 기준 최대 72바이트"));
+    }
+
     @TestConfiguration(proxyBeanMethods = false)
     @RestController
     static class TestApi {

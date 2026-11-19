@@ -188,7 +188,7 @@ class AuthApiTest {
         String email = UUID.randomUUID() + "@example.com";
         MemberResponse member = authService.signup(new SignupRequest(email, "password123", "러너"));
         for (LoginRequest request : List.of(new LoginRequest(UUID.randomUUID() + "@example.com", "password123"),
-                new LoginRequest(email, "wrongpassword"), new LoginRequest(email, "가".repeat(25)))) {
+                new LoginRequest(email, "wrongpassword"))) {
             mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized())
@@ -199,6 +199,19 @@ class AuthApiTest {
                 .content(objectMapper.writeValueAsString(new LoginRequest(email, "password123"))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+        assertThat(jdbcTemplate.queryForObject("select count(*) from auth_sessions where member_id=?",
+                Long.class, member.memberId())).isZero();
+    }
+
+    @Test
+    @DisplayName("UTF-8 72바이트를 넘는 로그인 비밀번호는 입력 오류로 거절하고 세션을 생성하지 않는다")
+    void login_oversizedUtf8Password_returnsBadRequestWithoutSession() throws Exception {
+        String email = UUID.randomUUID() + "@example.com";
+        MemberResponse member = authService.signup(new SignupRequest(email, "password123", "러너"));
+        mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new LoginRequest(email, "가".repeat(25)))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
         assertThat(jdbcTemplate.queryForObject("select count(*) from auth_sessions where member_id=?",
                 Long.class, member.memberId())).isZero();
     }

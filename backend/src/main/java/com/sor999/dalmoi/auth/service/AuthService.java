@@ -16,7 +16,6 @@ import com.sor999.dalmoi.member.domain.MemberCredential;
 import com.sor999.dalmoi.member.dto.MemberResponse;
 import com.sor999.dalmoi.member.repository.MemberCredentialRepository;
 import com.sor999.dalmoi.member.repository.MemberRepository;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Locale;
@@ -54,10 +53,6 @@ public class AuthService {
     public MemberResponse signup(SignupRequest request) {
         String email = request.email().strip().toLowerCase(Locale.ROOT);
 
-        if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
-            throw new BusinessException(ErrorCode.INVALID_AUTH_REQUEST);
-        }
-
         if (memberRepository.existsByEmail(email)) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
@@ -71,10 +66,6 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
-            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
-        }
-
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(

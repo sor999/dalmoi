@@ -1,6 +1,7 @@
 package com.sor999.dalmoi.session;
 
 import com.sor999.dalmoi.session.service.SessionService;
+import com.sor999.dalmoi.session.domain.SessionStatus;
 import com.sor999.dalmoi.session.dto.SessionResponse;
 import com.sor999.dalmoi.global.exception.BusinessException;
 import com.sor999.dalmoi.global.exception.ErrorCode;
@@ -62,7 +63,7 @@ class SessionServiceTest extends MvpDatabaseTest {
         assertThat(concurrent(() -> sessionService.create(s.memberId(), s.crewId(), "새 러닝", s.courseId()),
                 () -> sessionService.create(s.memberId(), s.crewId(), "새 러닝", s.courseId())))
                 .containsExactlyInAnyOrder("OK", "ACTIVE_SESSION_EXISTS");
-        Long id = sessionService.list(s.memberId(), s.crewId(), "WAITING").getFirst().sessionId();
+        Long id = sessionService.list(s.memberId(), s.crewId(), SessionStatus.WAITING).getFirst().sessionId();
         assertThat(sessionService.participants(s.memberId(), id)).hasSize(1);
     }
 

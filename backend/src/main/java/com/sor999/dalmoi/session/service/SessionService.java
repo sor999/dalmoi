@@ -72,20 +72,12 @@ public class SessionService {
         return detail(memberId, session.getId());
     }
 
-    public List<SessionResponse.Summary> list(Long memberId, Long crewId, String status) {
+    public List<SessionResponse.Summary> list(Long memberId, Long crewId, SessionStatus status) {
         requireMember(crewId, memberId);
-
-        if (status != null) {
-            try {
-                SessionStatus.valueOf(status);
-            } catch (IllegalArgumentException ex) {
-                throw new BusinessException(ErrorCode.INVALID_REQUEST);
-            }
-        }
 
         return runningSessionRepository.findByCrewIdOrderByCreatedAtDescIdDesc(crewId)
                 .stream()
-                .filter(s -> status == null || s.getStatus().name().equals(status))
+                .filter(s -> status == null || s.getStatus() == status)
                 .map(s -> new SessionResponse.Summary(s.getId(), s.getTitle(), s.getStatus().name(),
                         s.getCourse().getId(), sessionParticipantRepository.countBySessionId(s.getId())))
                 .toList();

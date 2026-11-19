@@ -61,9 +61,7 @@ public class GpsService {
 
         Instant now = clock.instant();
 
-        if (!Double.isFinite(request.accuracyMeters()) || !Double.isFinite(request.latitude())
-                || !Double.isFinite(request.longitude())
-                || request.recordedAt().isBefore(now.minus(properties.maxPastAge()))
+        if (request.recordedAt().isBefore(now.minus(properties.maxPastAge()))
                 || request.recordedAt().isAfter(now.plus(properties.maxFutureSkew()))
                 || request.recordedAt().isBefore(participant.getStartedAt())) {
             throw new BusinessException(ErrorCode.INVALID_GPS_PAYLOAD);
