@@ -88,6 +88,22 @@ class DalmoiDemoViewModel(initialState: DalmoiUiState = DalmoiUiState()) : ViewM
         _uiState.update { it.copy(authError = !valid, password = if (valid) "" else it.password) }
         return valid
     }
+    fun changeInviteCode(value: String) {
+        _uiState.update {
+            it.copy(
+                inviteCode = value,
+                inviteError = false,
+            )
+        }
+    }
+    fun joinDemoCrew(): Boolean {
+        val valid = uiState.value.inviteCode.trim().uppercase() in setOf("RS-7K2Q", "RS-7K2Q9")
+        _uiState.update { it.copy(inviteError = !valid) }
+        return valid
+    }
+    fun nameCrew(value: String) {
+        if (value.isNotBlank()) _uiState.update { it.copy(crewName = value.trim()) }
+    }
     fun selectCourse(id: String) {
         _uiState.update { state -> if (state.courses.any { it.id == id }) state.copy(selectedCourseId = id) else state }
     }
