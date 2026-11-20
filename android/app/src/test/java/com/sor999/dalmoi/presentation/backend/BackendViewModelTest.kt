@@ -94,6 +94,24 @@ class BackendViewModelTest {
         assertEquals(ApiFailureKind.Unauthorized, model.uiState.value.error?.kind)
     }
 
+    @Test fun mapPointsPreserveTapOrderAndSupportUndoAndReset() = runTest {
+        val model = model(FakeRepository())
+        model.open(BackendScreen.CreateCourse)
+        advanceUntilIdle()
+        val first = GeoPoint(37.52, 126.93)
+        val second = GeoPoint(37.521, 126.931)
+        model.addCoursePoint(first)
+        model.addCoursePoint(GeoPoint(Double.NaN, 126.93))
+        model.addCoursePoint(second)
+        assertEquals(listOf(first, second), model.uiState.value.courseDraftPoints)
+        model.undoCoursePoint()
+        assertEquals(listOf(first), model.uiState.value.courseDraftPoints)
+        repeat(50) { model.addCoursePoint(second) }
+        assertEquals(50, model.uiState.value.courseDraftPoints.size)
+        model.resetCoursePoints()
+        assertTrue(model.uiState.value.courseDraftPoints.isEmpty())
+    }
+
     private class FakeRepository : StubRepository() {
         override val signedIn = MutableStateFlow(false)
         var authResult: Result<Unit> = Result.success(Unit)

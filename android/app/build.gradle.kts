@@ -1,8 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
 }
+
+val localProperties = providers.fileContents(rootProject.layout.projectDirectory.file("local.properties")).asText.map {
+    Properties().apply { load(it.reader()) }
+}
+val naverMapKeyId = providers.gradleProperty("dalmoi.naverMapKeyId")
+    .orElse(providers.environmentVariable("NAVER_MAP_KEY_ID"))
+    .orElse(localProperties.map { it.getProperty("dalmoi.naverMapKeyId", "") })
+    .getOrElse("")
+    .trim()
 
 android {
     namespace = "com.sor999.dalmoi"
@@ -14,6 +25,8 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
+        manifestPlaceholders["naverMapKeyId"] = naverMapKeyId
+        buildConfigField("boolean", "NAVER_MAP_CONFIGURED", naverMapKeyId.isNotBlank().toString())
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
@@ -45,6 +58,7 @@ android {
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 
 dependencies {
+    implementation(libs.naver.map)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.json)

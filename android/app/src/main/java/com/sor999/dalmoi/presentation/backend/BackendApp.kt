@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -39,6 +40,8 @@ import com.sor999.dalmoi.domain.model.Course
 import com.sor999.dalmoi.presentation.auth.AuthScreen
 import com.sor999.dalmoi.presentation.common.component.ActionButton
 import com.sor999.dalmoi.presentation.common.theme.Palette
+import com.sor999.dalmoi.presentation.course.CourseMap
+import com.sor999.dalmoi.presentation.course.LiveCourseEditor
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -48,6 +51,24 @@ fun BackendApp(factory: ViewModelProvider.Factory, modifier: Modifier = Modifier
     val model: BackendViewModel = viewModel(factory = factory)
     val state by model.uiState.collectAsStateWithLifecycle()
     BackHandler(enabled = state.signedIn && state.screen != BackendScreen.Home) { model.back() }
+    if (state.signedIn && state.screen == BackendScreen.CreateCourse) {
+        LiveCourseEditor(
+            points = state.courseDraftPoints,
+            title = state.courseDraftTitle,
+            busy = state.busy,
+            canSave = state.courseDraftPoints.size >= MIN_COURSE_POINTS,
+            limitReached = state.courseDraftPoints.size >= MAX_COURSE_POINTS,
+            error = state.error?.let { stringResource(errorResource(it)) },
+            onPoint = model::addCoursePoint,
+            onUndo = model::undoCoursePoint,
+            onReset = model::resetCoursePoints,
+            onTitle = model::changeCourseDraftTitle,
+            onSave = model::createCourse,
+            onBack = model::back,
+            modifier = modifier,
+        )
+        return
+    }
     Surface(modifier.fillMaxSize(), color = Palette.Background) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("api-loading"))
@@ -93,6 +114,7 @@ fun BackendApp(factory: ViewModelProvider.Factory, modifier: Modifier = Modifier
 
                         BackendScreen.Courses -> {
                             Heading(R.string.nav_courses)
+                            ApiButton(R.string.course_title, state.busy) { model.open(BackendScreen.CreateCourse) }
                             if (state.courses.isEmpty() && !state.busy) EmptyContent()
                             state.courses.forEach { course ->
                                 CourseRow(course, state.busy) { model.selectCourse(course) }
@@ -100,10 +122,17 @@ fun BackendApp(factory: ViewModelProvider.Factory, modifier: Modifier = Modifier
                             if (state.hasMoreCourses) ApiButton(R.string.api_more, state.busy, model::moreCourses)
                         }
 
+                        BackendScreen.CreateCourse -> Unit
+
                         BackendScreen.Course -> state.course?.let { course ->
                             Text(course.title, style = MaterialTheme.typography.titleLarge)
                             Text(stringResource(R.string.api_distance_km, course.distanceKm))
                             Text(formatDate(course.createdAt))
+                            if (course.points.isNotEmpty()) {
+                                key(course.id) {
+                                    CourseMap(course.points, Modifier.fillMaxWidth().height(320.dp))
+                                }
+                            }
                             Text(stringResource(R.string.api_choose_crew_for_run))
                             ApiButton(R.string.nav_crews, state.busy) { model.open(BackendScreen.Crews) }
                         }
