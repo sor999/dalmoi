@@ -40,6 +40,7 @@ import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -62,6 +63,8 @@ fun Body(
     weight: FontWeight = FontWeight.Normal,
     color: Color = LocalContentColor.current,
     lineHeight: TextUnit = size * 1.25f,
+    letterSpacing: TextUnit = TextUnit.Unspecified,
+    textDecoration: TextDecoration? = null,
 ) {
     Text(
         text,
@@ -72,6 +75,8 @@ fun Body(
             fontSize = size,
             fontWeight = weight,
             lineHeight = lineHeight,
+            letterSpacing = letterSpacing,
+            textDecoration = textDecoration,
             platformStyle = PlatformTextStyle(includeFontPadding = false),
         ),
     )
@@ -262,10 +267,12 @@ fun LabeledInput(
     numeric: Boolean = false,
     placeholder: String = "",
     showLabel: Boolean = true,
+    labelColor: Color = LocalContentColor.current,
+    inputTextStyle: TextStyle = TextStyle.Default,
 ) {
     var focused by remember { mutableStateOf(false) }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (showLabel && title.isNotEmpty()) Body(title, size = 13.sp, weight = FontWeight.SemiBold)
+        if (showLabel && title.isNotEmpty()) Body(title, size = 13.sp, weight = FontWeight.SemiBold, color = labelColor)
         BasicTextField(
             value = value, onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)
@@ -283,7 +290,7 @@ fun LabeledInput(
                 fontSize = if (numeric) 22.sp else 15.sp,
                 letterSpacing = if (numeric) 2.64.sp else 0.sp,
                 color = Palette.Ink,
-            ),
+            ).merge(inputTextStyle),
             singleLine = true, cursorBrush = SolidColor(Palette.Ink),
             keyboardOptions = keyboardOptions, visualTransformation = transformation,
             decorationBox = { field ->
