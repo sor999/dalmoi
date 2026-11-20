@@ -17,11 +17,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,11 +29,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import com.sor999.dalmoi.BuildConfig
 import com.sor999.dalmoi.R
 import com.sor999.dalmoi.domain.model.GeoPoint
@@ -207,26 +210,67 @@ internal fun LiveCourseEditor(
         )
     }
     if (naming) {
-        AlertDialog(
-            onDismissRequest = { if (!busy) naming = false },
-            title = { Body(label(R.string.course_save), size = 20.sp, weight = FontWeight.Bold) },
-            text = {
+        CourseNameDialog(title, busy, error, onTitle, onSave, onDismiss = { naming = false })
+    }
+}
+
+@Composable
+private fun CourseNameDialog(
+    title: String,
+    busy: Boolean,
+    error: String?,
+    onTitle: (String) -> Unit,
+    onSave: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = { if (!busy) onDismiss() },
+        properties = DialogProperties(dismissOnBackPress = !busy, dismissOnClickOutside = !busy),
+    ) {
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect { window?.setDimAmount(.5f) }
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(Corners.Dialog),
+            color = Palette.White,
+            contentColor = Palette.Ink,
+        ) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState())
+                    .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Body(label(R.string.course_save), size = 20.sp, weight = FontWeight.Bold)
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     LabeledInput(label(R.string.course_name), title, { if (!busy) onTitle(it) })
                     error?.let { Body(it, color = Palette.Error, size = 12.sp) }
                 }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = onSave,
-                    enabled = title.isNotBlank() && !busy,
-                    modifier = Modifier.testTag("course-name-confirm"),
-                ) { Body(label(R.string.course_save)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { naming = false }, enabled = !busy) { Body(label(R.string.course_cancel)) }
-            },
-        )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                    ActionButton(
+                        label(R.string.course_cancel),
+                        onDismiss,
+                        height = 48.dp,
+                        color = Palette.White,
+                        foreground = Palette.Ink,
+                        outline = Palette.InputBorder,
+                        enabled = !busy,
+                        fontSize = 14.sp,
+                        fillWidth = false,
+                        horizontalPadding = 16.dp,
+                    )
+                    ActionButton(
+                        label(R.string.course_save),
+                        onSave,
+                        modifier = Modifier.testTag("course-name-confirm"),
+                        height = 48.dp,
+                        enabled = title.isNotBlank() && !busy,
+                        fontSize = 14.sp,
+                        fillWidth = false,
+                        horizontalPadding = 20.dp,
+                    )
+                }
+            }
+        }
     }
 }
 
