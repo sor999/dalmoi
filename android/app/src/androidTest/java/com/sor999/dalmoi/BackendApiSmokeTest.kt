@@ -2,10 +2,15 @@ package com.sor999.dalmoi
 
 import android.Manifest
 import android.os.Build
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -16,13 +21,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.espresso.Espresso.closeSoftKeyboard
 import androidx.test.platform.app.InstrumentationRegistry
-import com.sor999.dalmoi.app.DalmoiApplication
 import com.sor999.dalmoi.app.MainActivity
 import com.sor999.dalmoi.data.local.EncryptedTokenStore
-import com.sor999.dalmoi.domain.model.GeoPoint
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assume.assumeTrue
@@ -56,6 +59,11 @@ class BackendApiSmokeTest {
     private fun waitForText(value: String) {
         compose.waitUntil(30_000) { compose.onAllNodesWithText(value).fetchSemanticsNodes().isNotEmpty() }
     }
+    private fun waitUntilEnabled(id: Int) {
+        compose.waitUntil(10_000) {
+            compose.onAllNodes(hasText(text(id)) and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
     private fun click(id: Int) {
         compose.onNodeWithText(text(id)).performScrollTo().performClick()
         compose.waitForIdle()
@@ -87,8 +95,23 @@ class BackendApiSmokeTest {
     }
 
     @Test
+    fun courseEditorShowsUnavailableMapWhenNaverKeyIsMissing() {
+        assumeTrue(isBackendSmokeEnabled())
+        assumeTrue(!BuildConfig.NAVER_MAP_CONFIGURED)
+        signUp(System.currentTimeMillis().toString())
+        tab("Courses")
+        click(R.string.course_title)
+        compose.onNodeWithText(text(R.string.api_course_map_unavailable)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.course_save)).assertIsNotEnabled()
+        compose.onNodeWithContentDescription(text(R.string.course_back)).performClick()
+        compose.onNodeWithText(text(R.string.api_logout)).performClick()
+        waitForText(text(R.string.auth_email))
+    }
+
+    @Test
     fun realBackendSignupCourseCrewSessionAndRecordLifecycle() {
         assumeTrue(isBackendSmokeEnabled())
+        check(BuildConfig.NAVER_MAP_CONFIGURED) { "Set the Naver Maps key ID before running the live map test." }
         val unique = System.currentTimeMillis().toString()
         val crew = "Android-$unique"
         val course = "Course-$unique"
@@ -113,17 +136,37 @@ class BackendApiSmokeTest {
                 } == true
             },
         ).assertIsDisplayed()
-        val application = context.applicationContext as DalmoiApplication
-        runBlocking {
-            application.container.repository.createCourse(
-                course,
-                listOf(GeoPoint(37.52, 126.93), GeoPoint(37.522, 126.932)),
-            ).getOrThrow()
-        }
         tab("Courses")
+        click(R.string.course_title)
+        compose.onNodeWithTag("api-tab-Courses").assertDoesNotExist()
+        compose.onNodeWithContentDescription(text(R.string.course_name)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.course_distance)).assertIsDisplayed()
+        compose.waitUntil(30_000) {
+            compose.onAllNodesWithTag("course-map-ready").fetchSemanticsNodes().isNotEmpty()
+        }
+        val map = compose.onNodeWithTag("course-map-ready")
+        compose.onNodeWithText(text(R.string.course_save)).assertIsNotEnabled()
+        map.performTouchInput { click(Offset(width * .40f, height * .42f)) }
+        waitUntilEnabled(R.string.course_undo)
+        compose.onNodeWithText(text(R.string.course_save)).assertIsNotEnabled()
+        map.performTouchInput { click(Offset(width * .60f, height * .50f)) }
+        waitUntilEnabled(R.string.course_save)
+        click(R.string.course_undo)
+        compose.onNodeWithText(text(R.string.course_save)).assertIsNotEnabled()
+        map.performTouchInput { click(Offset(width * .70f, height * .52f)) }
+        waitUntilEnabled(R.string.course_save)
+        click(R.string.course_save)
+        compose.onNodeWithTag("course-name-confirm").assertIsNotEnabled()
+        compose.onNodeWithText(text(R.string.course_cancel)).performClick()
+        waitUntilEnabled(R.string.course_save)
+        click(R.string.course_save)
+        compose.onNodeWithContentDescription(text(R.string.course_name)).performTextInput(course)
+        closeSoftKeyboard()
+        compose.onNodeWithTag("course-name-confirm").performClick()
         waitForText(course)
-        compose.onNodeWithText(course).performScrollTo().performClick()
-        compose.onNodeWithText(text(R.string.api_choose_crew_for_run)).assertIsDisplayed()
+        compose.waitUntil(30_000) {
+            compose.onAllNodesWithTag("course-map-ready").fetchSemanticsNodes().isNotEmpty()
+        }
         tab("Crews")
         waitForText("$crew · 1/10명")
         compose.onNodeWithText("$crew · 1/10명").performScrollTo().performClick()
