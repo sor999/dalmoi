@@ -7,6 +7,7 @@ import com.sor999.dalmoi.domain.model.ApiFailureKind
 import com.sor999.dalmoi.domain.model.Course
 import com.sor999.dalmoi.domain.model.Crew
 import com.sor999.dalmoi.domain.model.Dashboard
+import com.sor999.dalmoi.domain.model.GeoPoint
 import com.sor999.dalmoi.domain.model.RecordStatus
 import com.sor999.dalmoi.domain.model.RunRecord
 import com.sor999.dalmoi.domain.model.RunningSession
@@ -19,7 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class BackendScreen { Home, Courses, Course, Crews, Crew, CreateSession, Session, Records, Record }
+enum class BackendScreen { Home, Courses, CreateCourse, Course, Crews, Crew, CreateSession, Session, Records, Record }
 
 data class BackendUiState(
     val signedIn: Boolean = false,
@@ -35,6 +36,8 @@ data class BackendUiState(
     val coursePage: Int = -1,
     val hasMoreCourses: Boolean = false,
     val course: Course? = null,
+    val courseDraftTitle: String = "",
+    val courseDraftPoints: List<GeoPoint> = emptyList(),
     val crews: List<Crew> = emptyList(),
     val crew: Crew? = null,
     val inviteCode: String? = null,
@@ -110,7 +113,7 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
     fun back() {
         if (mutableState.value.busy) return
         val target = when (mutableState.value.screen) {
-            BackendScreen.Course -> BackendScreen.Courses
+            BackendScreen.Course, BackendScreen.CreateCourse -> BackendScreen.Courses
             BackendScreen.Crew -> BackendScreen.Crews
             BackendScreen.CreateSession, BackendScreen.Session -> BackendScreen.Crew
             BackendScreen.Record -> BackendScreen.Records
@@ -148,6 +151,8 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
                 val detail = repository.record(selected.id).getOrThrow()
                 mutableState.update { it.copy(record = detail) }
             }
+
+            BackendScreen.CreateCourse -> Unit
         }
     }
 
@@ -161,6 +166,48 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
     fun selectCourse(course: Course) {
         mutableState.update { it.copy(course = course) }
         open(BackendScreen.Course)
+    }
+
+    fun changeCourseDraftTitle(title: String) {
+        if (title.length > 100) return
+        mutableState.update { it.copy(courseDraftTitle = title, error = null) }
+    }
+
+    fun addCoursePoint(point: GeoPoint) {
+        if (point.latitude !in -90.0..90.0 || point.longitude !in -180.0..180.0) return
+        mutableState.update {
+            if (it.busy || it.courseDraftPoints.size >= MAX_COURSE_POINTS) {
+                it
+            } else {
+                it.copy(courseDraftPoints = it.courseDraftPoints + point, error = null)
+            }
+        }
+    }
+
+    fun undoCoursePoint() {
+        mutableState.update { it.copy(courseDraftPoints = it.courseDraftPoints.dropLast(1), error = null) }
+    }
+
+    fun resetCoursePoints() {
+        mutableState.update { it.copy(courseDraftPoints = emptyList(), error = null) }
+    }
+
+    fun createCourse() = execute {
+        val title = mutableState.value.courseDraftTitle.trim()
+        val points = mutableState.value.courseDraftPoints
+        if (title.isBlank() || points.size !in MIN_COURSE_POINTS..MAX_COURSE_POINTS) {
+            throw ApiFailure(ApiFailureKind.InvalidInput)
+        }
+
+        val course = repository.createCourse(title, points).getOrThrow()
+        mutableState.update {
+            it.copy(
+                course = course,
+                screen = BackendScreen.Course,
+                courseDraftTitle = "",
+                courseDraftPoints = emptyList(),
+            )
+        }
     }
 
     fun selectCrew(crew: Crew) {
@@ -300,3 +347,6 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
         }
     }
 }
+
+internal const val MIN_COURSE_POINTS = 2
+internal const val MAX_COURSE_POINTS = 50
