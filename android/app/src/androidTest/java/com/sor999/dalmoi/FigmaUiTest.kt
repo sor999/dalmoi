@@ -170,6 +170,7 @@ class FigmaUiTest {
 
     @Test
     fun loginInputsNavigateToTheHomeWithoutAnyPreviewToolbar() {
+        show(AppScreen.Login)
         compose.onNodeWithContentDescription("비밀번호").performTextInput("ui-preview")
         compose.onAllNodesWithText("로그인").onLast().performClick()
         compose.onNodeWithText("안녕하세요, 민준님").assertIsDisplayed()

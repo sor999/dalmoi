@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -48,6 +49,7 @@ fun AuthScreen(
     onNickname: (String) -> Unit,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
+    busy: Boolean = false,
 ) {
     BoxWithConstraints(modifier.fillMaxSize().imePadding()) {
         val minimumHeight = maxHeight
@@ -84,7 +86,7 @@ fun AuthScreen(
                                 RoundedCornerShape(9.dp),
                             )
                             .semantics { this.selected = selected }
-                            .clickable(role = Role.Tab) { onSignup(index == 1) }.padding(10.dp),
+                            .clickable(enabled = !busy, role = Role.Tab) { onSignup(index == 1) }.padding(10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Body(
@@ -122,12 +124,14 @@ fun AuthScreen(
                 ActionButton(
                     label(if (state.signingUp) R.string.auth_signup else R.string.auth_login),
                     onContinue,
+                    modifier = Modifier.testTag("auth-submit"),
+                    enabled = !busy,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Body(label(R.string.auth_first), size = 13.sp, color = Palette.Secondary)
                     Body(
                         label(R.string.auth_signup),
-                        Modifier.clickable { onSignup(true) }.padding(
+                        Modifier.clickable(enabled = !busy) { onSignup(true) }.padding(
                             horizontal = 6.dp,
                             vertical = 8.dp,
                         ),
