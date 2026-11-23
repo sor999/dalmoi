@@ -42,6 +42,7 @@ import com.sor999.dalmoi.presentation.common.component.ActionButton
 import com.sor999.dalmoi.presentation.common.theme.Palette
 import com.sor999.dalmoi.presentation.course.CourseMap
 import com.sor999.dalmoi.presentation.course.LiveCourseEditor
+import com.sor999.dalmoi.presentation.session.RunLocationStartButton
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -284,7 +285,7 @@ private fun SessionContent(state: BackendUiState, model: BackendViewModel) {
     if (session.canStart) ApiButton(R.string.api_start_group, state.busy) { model.commandSession("start") }
     if (session.status == "RUNNING" && session.myStatus == "JOINED") {
         Text(stringResource(R.string.api_gps_pending))
-        ApiButton(R.string.api_start_me, state.busy) { model.commandSession("me/start") }
+        RunLocationStartButton(enabled = !state.busy) { model.commandSession("me/start") }
     }
     if (session.status == "RUNNING" && session.myStatus == "RUNNING") {
         Text(stringResource(R.string.api_gps_pending))
