@@ -120,4 +120,10 @@
     <string name="sample_old_run">일요일 LSD</string>
     <string name="sample_peer_jiho">지호</string>
     <string name="sample_peer_seoyeon">서연</string>
+    <string name="run_location_permission_title">정확한 위치가 필요해요</string>
+    <string name="run_location_permission_message">앱 설정에서 위치 권한과 정확한 위치 사용을 허용한 뒤 다시 시작해 주세요.</string>
+    <string name="run_location_permission_settings">앱 설정 열기</string>
+    <string name="run_location_disabled_title">기기 위치가 꺼져 있어요</string>
+    <string name="run_location_disabled_message">기기 설정에서 위치를 켠 뒤 다시 시작해 주세요.</string>
+    <string name="run_location_device_settings">위치 설정 열기</string>
 </resources>

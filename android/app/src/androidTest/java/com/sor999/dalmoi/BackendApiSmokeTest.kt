@@ -38,22 +38,25 @@ import org.junit.runners.model.Statement
 /** Explicit opt-in: creates an isolated account and data on the configured development server. */
 class BackendApiSmokeTest {
     val compose = createAndroidComposeRule<MainActivity>()
-    private val localNetworkPermission = TestRule { test, _ ->
+    private val runtimePermissions = TestRule { test, _ ->
         object : Statement() {
             override fun evaluate() {
-                if (Build.VERSION.SDK_INT >= 37 && isBackendSmokeEnabled()) {
+                if (isBackendSmokeEnabled()) {
                     val instrumentation = InstrumentationRegistry.getInstrumentation()
-                    instrumentation.uiAutomation.grantRuntimePermission(
-                        instrumentation.targetContext.packageName,
-                        Manifest.permission.ACCESS_LOCAL_NETWORK,
-                    )
+                    val packageName = instrumentation.targetContext.packageName
+                    val automation = instrumentation.uiAutomation
+                    if (Build.VERSION.SDK_INT >= 37) {
+                        automation.grantRuntimePermission(packageName, Manifest.permission.ACCESS_LOCAL_NETWORK)
+                    }
+                    automation.grantRuntimePermission(packageName, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    automation.grantRuntimePermission(packageName, Manifest.permission.ACCESS_FINE_LOCATION)
                 }
                 test.evaluate()
             }
         }
     }
 
-    @get:Rule val rules: RuleChain = RuleChain.outerRule(localNetworkPermission).around(compose)
+    @get:Rule val rules: RuleChain = RuleChain.outerRule(runtimePermissions).around(compose)
     private fun text(id: Int, vararg args: Any) =
         InstrumentationRegistry.getInstrumentation().targetContext.getString(id, *args)
     private fun waitForText(value: String) {
