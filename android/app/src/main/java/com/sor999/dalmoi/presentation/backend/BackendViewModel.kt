@@ -20,7 +20,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class BackendScreen { Home, Courses, CreateCourse, Course, Crews, Crew, CreateSession, Session, Records, Record }
+enum class BackendScreen {
+    Home,
+    Courses,
+    CreateCourse,
+    Course,
+    Crews,
+    JoinCrew,
+    Crew,
+    CreateSession,
+    Session,
+    Records,
+    Record,
+}
 
 data class BackendUiState(
     val signedIn: Boolean = false,
@@ -57,6 +69,8 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
     private val mutableState = MutableStateFlow(BackendUiState(signedIn = repository.signedIn.value))
     val uiState = mutableState.asStateFlow()
     private var request: Job? = null
+    private var courseBackScreen = BackendScreen.Courses
+    private var sessionBackScreen = BackendScreen.Crew
 
     init {
         viewModelScope.launch {
@@ -106,6 +120,7 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
 
     fun open(screen: BackendScreen) {
         if (mutableState.value.busy) return
+        if (screen == BackendScreen.CreateCourse) courseBackScreen = mutableState.value.screen
         mutableState.update { it.copy(screen = screen, error = null) }
         refresh()
     }
@@ -113,9 +128,11 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
     fun back() {
         if (mutableState.value.busy) return
         val target = when (mutableState.value.screen) {
-            BackendScreen.Course, BackendScreen.CreateCourse -> BackendScreen.Courses
+            BackendScreen.Course -> BackendScreen.Courses
+            BackendScreen.CreateCourse -> courseBackScreen
             BackendScreen.Crew -> BackendScreen.Crews
-            BackendScreen.CreateSession, BackendScreen.Session -> BackendScreen.Crew
+            BackendScreen.CreateSession -> BackendScreen.Crew
+            BackendScreen.Session -> sessionBackScreen
             BackendScreen.Record -> BackendScreen.Records
             else -> BackendScreen.Home
         }
@@ -152,7 +169,7 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
                 mutableState.update { it.copy(record = detail) }
             }
 
-            BackendScreen.CreateCourse -> Unit
+            BackendScreen.CreateCourse, BackendScreen.JoinCrew -> Unit
         }
     }
 
@@ -243,6 +260,7 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
         mutableState.update { it.copy(inviteCode = code) }
     }
     fun selectSession(id: Long) = execute {
+        sessionBackScreen = mutableState.value.screen
         mutableState.update { it.copy(session = null, recordStatus = null) }
         loadSession(id)
         mutableState.update { it.copy(screen = BackendScreen.Session) }
@@ -250,6 +268,7 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
     fun createSession(title: String, courseId: Long) = execute {
         val crewId = mutableState.value.crew?.id ?: return@execute
         val session = repository.createSession(crewId, title.trim(), courseId).getOrThrow()
+        sessionBackScreen = BackendScreen.Crew
         mutableState.update { it.copy(session = session, recordStatus = null, screen = BackendScreen.Session) }
     }
     fun commandSession(command: String) = execute {

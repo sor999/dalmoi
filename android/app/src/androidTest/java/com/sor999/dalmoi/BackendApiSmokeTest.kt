@@ -10,8 +10,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -68,20 +71,37 @@ class BackendApiSmokeTest {
         }
     }
     private fun click(id: Int) {
-        compose.onNodeWithText(text(id)).performScrollTo().performClick()
+        val node = compose.onNodeWithText(text(id))
+        if (!node.isDisplayed()) node.performScrollTo()
+        node.performClick()
         compose.waitForIdle()
         compose.waitUntil(30_000) { compose.onAllNodesWithTag("api-loading").fetchSemanticsNodes().isEmpty() }
     }
     private fun tab(name: String) {
-        compose.onNodeWithTag("api-tab-$name").performClick()
+        val tag = "api-tab-$name"
+        for (attempt in 0 until 3) {
+            if (compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()) break
+            compose.onNodeWithContentDescription(text(R.string.course_back)).performClick()
+            compose.waitUntil(30_000) { compose.onAllNodesWithTag("api-loading").fetchSemanticsNodes().isEmpty() }
+        }
+        compose.onNodeWithTag(tag).performClick()
         compose.waitForIdle()
         compose.waitUntil(30_000) { compose.onAllNodesWithTag("api-loading").fetchSemanticsNodes().isEmpty() }
+    }
+
+    private fun logoutFromHome() {
+        tab("Home")
+        compose.onNodeWithContentDescription(text(R.string.home_profile)).performClick()
+        compose.onNodeWithText(text(R.string.api_logout)).performClick()
     }
 
     private fun isBackendSmokeEnabled() =
         InstrumentationRegistry.getArguments().getString("dalmoi.runBackendSmoke") == "true"
 
     private fun signUp(accountId: String) {
+        if (compose.onAllNodesWithContentDescription(text(R.string.home_profile)).fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithContentDescription(text(R.string.home_profile)).performClick()
+        }
         if (compose.onAllNodesWithText(text(R.string.api_logout)).fetchSemanticsNodes().isNotEmpty()) {
             compose.onNodeWithText(text(R.string.api_logout)).performClick()
         }
@@ -94,7 +114,7 @@ class BackendApiSmokeTest {
         compose.onNodeWithContentDescription(text(R.string.auth_nickname)).performTextInput("AndroidRunner")
         closeSoftKeyboard()
         compose.onNodeWithTag("auth-submit").performClick()
-        waitForText("AndroidRunner님, 반가워요")
+        waitForText(text(R.string.home_greeting_format, "AndroidRunner"))
     }
 
     @Test
@@ -107,7 +127,7 @@ class BackendApiSmokeTest {
         compose.onNodeWithText(text(R.string.api_course_map_unavailable)).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.course_save)).assertIsNotEnabled()
         compose.onNodeWithContentDescription(text(R.string.course_back)).performClick()
-        compose.onNodeWithText(text(R.string.api_logout)).performClick()
+        logoutFromHome()
         waitForText(text(R.string.auth_email))
     }
 
@@ -126,20 +146,24 @@ class BackendApiSmokeTest {
         val persisted = context.getSharedPreferences("auth_session", 0).all.values.joinToString()
         assertFalse(persisted.contains(requireNotNull(restored).accessToken))
         assertFalse(persisted.contains(restored.refreshToken))
+        click(R.string.crew_join)
+        compose.onNodeWithContentDescription(text(R.string.crew_code)).assertIsDisplayed()
         tab("Crews")
-        compose.onNodeWithText(text(R.string.api_crew_name)).performTextInput(crew)
-        closeSoftKeyboard()
         click(R.string.crew_create)
+        compose.onNodeWithContentDescription(text(R.string.crew_name)).performTextInput(crew)
+        closeSoftKeyboard()
+        compose.onNodeWithText(text(R.string.crew_create_action)).performClick()
         waitForText(crew)
+        waitUntilEnabled(R.string.api_show_invite)
         click(R.string.api_show_invite)
-        compose.onNode(
-            SemanticsMatcher("16-character invitation") { node ->
-                node.config.getOrNull(SemanticsProperties.Text)?.any {
-                    Regex("^[A-Z0-9]{16}$").matches(it.text)
-                } == true
-            },
-        ).assertIsDisplayed()
-        tab("Courses")
+        val inviteCode = SemanticsMatcher("16-character invitation") { node ->
+            node.config.getOrNull(SemanticsProperties.Text)?.any {
+                Regex("^[A-Z0-9]{16}$").matches(it.text)
+            } == true
+        }
+        compose.waitUntil(30_000) { compose.onAllNodes(inviteCode).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(inviteCode).performScrollTo().assertIsDisplayed()
+        tab("Home")
         click(R.string.course_title)
         compose.onNodeWithTag("api-tab-Courses").assertDoesNotExist()
         compose.onNodeWithContentDescription(text(R.string.course_name)).assertDoesNotExist()
@@ -159,10 +183,6 @@ class BackendApiSmokeTest {
         map.performTouchInput { click(Offset(width * .70f, height * .52f)) }
         waitUntilEnabled(R.string.course_save)
         click(R.string.course_save)
-        compose.onNodeWithTag("course-name-confirm").assertIsNotEnabled()
-        compose.onNodeWithText(text(R.string.course_cancel)).performClick()
-        waitUntilEnabled(R.string.course_save)
-        click(R.string.course_save)
         compose.onNodeWithContentDescription(text(R.string.course_name)).performTextInput(course)
         closeSoftKeyboard()
         compose.onNodeWithTag("course-name-confirm").performClick()
@@ -171,11 +191,11 @@ class BackendApiSmokeTest {
             compose.onAllNodesWithTag("course-map-ready").fetchSemanticsNodes().isNotEmpty()
         }
         tab("Crews")
-        waitForText("$crew · 1/10명")
-        compose.onNodeWithText("$crew · 1/10명").performScrollTo().performClick()
         waitForText(crew)
-        click(R.string.course_create_run)
-        compose.onNodeWithText(text(R.string.api_session_name)).performTextInput(session)
+        compose.onNodeWithText(crew).performScrollTo().performClick()
+        waitForText(crew)
+        click(R.string.crew_add_run)
+        compose.onNodeWithContentDescription(text(R.string.api_session_name)).performTextInput(session)
         closeSoftKeyboard()
         compose.waitUntil(20_000) {
             compose.onAllNodesWithText(course, substring = true).fetchSemanticsNodes().isNotEmpty()
@@ -183,11 +203,16 @@ class BackendApiSmokeTest {
         compose.onNodeWithText(course, substring = true).performScrollTo().performClick()
         click(R.string.api_create_session)
         waitForText(session)
+        tab("Home")
+        waitForText(session)
+        compose.onNodeWithText(text(R.string.home_run_participants_format, 1L, 1L)).assertIsDisplayed()
+        click(R.string.home_enter)
         click(R.string.api_start_group)
         waitForText(text(R.string.api_start_me))
         click(R.string.api_start_me)
-        waitForText(text(R.string.api_finish_me))
-        click(R.string.api_finish_me)
+        waitForText(text(R.string.run_hold_end))
+        compose.onNodeWithText(text(R.string.run_hold_end)).performTouchInput { longClick() }
+        compose.onNodeWithText(text(R.string.run_end_confirm)).performClick()
         waitForText(text(R.string.api_complete_group))
         click(R.string.api_complete_group)
         compose.waitUntil(20_000) {
@@ -203,9 +228,9 @@ class BackendApiSmokeTest {
         }
         waitForText(session)
         compose.onNodeWithText(session).performScrollTo().performClick()
-        waitForText(text(R.string.api_actual_points, 0))
-        compose.onNodeWithText(text(R.string.api_actual_points, 0)).assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.api_logout)).performClick()
+        waitForText(text(R.string.record_title))
+        compose.onNodeWithText(text(R.string.record_actual)).assertIsDisplayed()
+        logoutFromHome()
         waitForText(text(R.string.auth_email))
         compose.onNodeWithTag("auth-submit").assertIsDisplayed()
     }

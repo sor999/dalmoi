@@ -53,6 +53,14 @@ object Corners {
     val Dialog = 28.dp
 }
 
+const val DIALOG_SCRIM_ALPHA = 0.5f
+
+object TextSizes {
+    val DialogTitle = 20.sp
+    val Label = 14.sp
+    val Caption = 12.sp
+}
+
 val TextFont = FontFamily(
     Font(R.font.pretendard_regular, FontWeight.Normal),
     Font(R.font.pretendard_medium, FontWeight.Medium),
@@ -85,10 +93,10 @@ fun DalmoiTheme(content: @Composable () -> Unit) {
         typography = Typography(
             bodyLarge = body.copy(fontSize = 15.sp, lineHeight = 20.sp),
             bodyMedium = body,
-            bodySmall = body.copy(fontSize = 12.sp, lineHeight = 16.sp),
+            bodySmall = body.copy(fontSize = TextSizes.Caption, lineHeight = 16.sp),
             titleLarge = body.copy(fontSize = 24.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold),
             titleMedium = body.copy(fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
-            labelLarge = body.copy(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold),
+            labelLarge = body.copy(fontSize = TextSizes.Label, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold),
         ),
         content = content,
     )
