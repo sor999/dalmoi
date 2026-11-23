@@ -155,13 +155,13 @@ class BackendApiSmokeTest {
         compose.onNodeWithText(text(R.string.crew_create_action)).performClick()
         waitForText(crew)
         click(R.string.api_show_invite)
-        compose.onNode(
-            SemanticsMatcher("16-character invitation") { node ->
-                node.config.getOrNull(SemanticsProperties.Text)?.any {
-                    Regex("^[A-Z0-9]{16}$").matches(it.text)
-                } == true
-            },
-        ).assertIsDisplayed()
+        val inviteCode = SemanticsMatcher("16-character invitation") { node ->
+            node.config.getOrNull(SemanticsProperties.Text)?.any {
+                Regex("^[A-Z0-9]{16}$").matches(it.text)
+            } == true
+        }
+        compose.waitUntil(30_000) { compose.onAllNodes(inviteCode).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(inviteCode).performScrollTo().assertIsDisplayed()
         tab("Home")
         click(R.string.course_title)
         compose.onNodeWithTag("api-tab-Courses").assertDoesNotExist()
