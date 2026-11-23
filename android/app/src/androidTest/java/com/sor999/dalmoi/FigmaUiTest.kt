@@ -6,8 +6,11 @@ import android.os.Build
 import android.provider.MediaStore
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
@@ -17,6 +20,7 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -29,8 +33,10 @@ import com.sor999.dalmoi.app.demo.DalmoiUiState
 import com.sor999.dalmoi.app.demo.DraftError
 import com.sor999.dalmoi.navigation.AppScreen
 import com.sor999.dalmoi.navigation.DalmoiApp
+import com.sor999.dalmoi.presentation.auth.AuthScreen
 import com.sor999.dalmoi.presentation.common.theme.DalmoiTheme
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
@@ -93,8 +99,10 @@ class FigmaUiTest {
     @Test
     fun referenceScreensAndErrorStatesRenderWithLocalSvgAssets() {
         compose.onNodeWithText("디자인 미리보기").assertDoesNotExist()
+        show(AppScreen.Login, DalmoiUiState(password = "preview1"))
+        screenshot(AppScreen.Login.name)
         listOf(
-            AppScreen.Login, AppScreen.Home, AppScreen.Editor, AppScreen.CourseDetail, AppScreen.Crews,
+            AppScreen.Home, AppScreen.Editor, AppScreen.CourseDetail, AppScreen.Crews,
             AppScreen.CrewDetail,
             AppScreen.CreateSession,
             AppScreen.Waiting,
@@ -104,7 +112,7 @@ class FigmaUiTest {
             show(screen)
             screenshot(screen.name)
         }
-        show(AppScreen.Login, DalmoiUiState(authError = true))
+        show(AppScreen.Login, DalmoiUiState(password = "preview1", authError = true))
         screenshot("LoginError")
         show(AppScreen.Editor, DalmoiUiState(draftError = DraftError.SaveFailed))
         screenshot("EditorError")
@@ -175,5 +183,35 @@ class FigmaUiTest {
         compose.onAllNodesWithText("로그인").onLast().performClick()
         compose.onNodeWithText("안녕하세요, 민준님").assertIsDisplayed()
         compose.onNodeWithText("디자인 미리보기").assertDoesNotExist()
+    }
+
+    @Test
+    fun loginProgressStaysInsideSubmitButtonAndInlineErrorAllowsRetry() {
+        val busy = mutableStateOf(false)
+        val error = mutableStateOf<String?>(null)
+        val failure = "서버에 연결할 수 없습니다."
+        compose.activity.runOnUiThread {
+            compose.activity.setContent {
+                DalmoiTheme {
+                    AuthScreen(DalmoiUiState(), {}, {}, {}, {}, {}, busy = busy.value, errorMessage = error.value)
+                }
+            }
+        }
+
+        val submit = compose.onNodeWithTag("auth-submit")
+        val bounds = submit.fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { busy.value = true }
+        submit.assertIsNotEnabled()
+        assertEquals(bounds, submit.fetchSemanticsNode().boundsInRoot)
+        val progress = compose.onNodeWithTag("api-loading").assertIsDisplayed()
+        check(bounds.contains(progress.fetchSemanticsNode().boundsInRoot.center))
+
+        compose.runOnIdle {
+            busy.value = false
+            error.value = failure
+        }
+        compose.onNodeWithTag("api-loading").assertDoesNotExist()
+        compose.onNodeWithText(failure).assertIsDisplayed()
+        submit.assertIsEnabled()
     }
 }

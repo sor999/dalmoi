@@ -71,13 +71,6 @@ fun BackendApp(factory: ViewModelProvider.Factory, modifier: Modifier = Modifier
     }
     Surface(modifier.fillMaxSize(), color = Palette.Background) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("api-loading"))
-            state.error?.let { error ->
-                Row(Modifier.fillMaxWidth().padding(12.dp)) {
-                    Text(stringResource(errorResource(error)), Modifier.weight(1f), color = Palette.Error)
-                    TextButton(onClick = model::dismissError) { Text(stringResource(R.string.api_dismiss)) }
-                }
-            }
             if (!state.signedIn) {
                 AuthScreen(
                     DalmoiUiState(
@@ -93,8 +86,16 @@ fun BackendApp(factory: ViewModelProvider.Factory, modifier: Modifier = Modifier
                     model::changeNickname,
                     model::authenticate,
                     busy = state.busy,
+                    errorMessage = state.error?.let { stringResource(errorResource(it)) },
                 )
             } else {
+                if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("api-loading"))
+                state.error?.let { error ->
+                    Row(Modifier.fillMaxWidth().padding(12.dp)) {
+                        Text(stringResource(errorResource(error)), Modifier.weight(1f), color = Palette.Error)
+                        TextButton(onClick = model::dismissError) { Text(stringResource(R.string.api_dismiss)) }
+                    }
+                }
                 Row(Modifier.fillMaxWidth()) {
                     TextButton(onClick = model::back, enabled = !state.busy) { Text(stringResource(R.string.api_back)) }
                     TextButton(onClick = model::refresh, enabled = !state.busy) {

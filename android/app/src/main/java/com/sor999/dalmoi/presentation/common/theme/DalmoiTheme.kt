@@ -23,6 +23,7 @@ object Palette {
     val Faint = Color(0xFFA9A8A2)
     val Border = Color(0xFFE2E0DA)
     val InputBorder = Color(0xFFDAD8D1)
+    val InputLabel = Color(0xFF3A3936)
     val Divider = Color(0xFFEFEDE8)
     val Soft = Color(0xFFECEAE4)
     val Error = Color(0xFFD9472B)
@@ -45,6 +46,7 @@ object Spacing {
 
 object Corners {
     val Input = 12.dp
+    val AuthTab = 9.dp
     val Button = 14.dp
     val Card = 18.dp
     val Panel = 24.dp
