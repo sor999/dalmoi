@@ -154,6 +154,7 @@ class BackendApiSmokeTest {
         closeSoftKeyboard()
         compose.onNodeWithText(text(R.string.crew_create_action)).performClick()
         waitForText(crew)
+        waitUntilEnabled(R.string.api_show_invite)
         click(R.string.api_show_invite)
         val inviteCode = SemanticsMatcher("16-character invitation") { node ->
             node.config.getOrNull(SemanticsProperties.Text)?.any {
