@@ -140,12 +140,14 @@ fun ActionButton(
     radius: Dp = Corners.Button,
     fillWidth: Boolean = true,
     horizontalPadding: Dp = 12.dp,
+    fontWeight: FontWeight = FontWeight.Bold,
+    outlineWidth: Dp = 1.5.dp,
 ) {
     val shape = RoundedCornerShape(radius)
     Box(
         modifier.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier).heightIn(min = height)
             .background(if (enabled) color else Palette.Soft, shape)
-            .then(if (outline != null) Modifier.border(1.5.dp, outline, shape) else Modifier)
+            .then(if (outline != null) Modifier.border(outlineWidth, outline, shape) else Modifier)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = horizontalPadding, vertical = if (height < 48.dp) 9.dp else 10.dp),
         contentAlignment = Alignment.Center,
@@ -153,7 +155,7 @@ fun ActionButton(
         Body(
             title,
             size = fontSize,
-            weight = FontWeight.Bold,
+            weight = fontWeight,
             color = if (enabled) foreground else Palette.Muted,
         )
     }
@@ -269,12 +271,14 @@ fun LabeledInput(
     showLabel: Boolean = true,
     labelColor: Color = LocalContentColor.current,
     inputTextStyle: TextStyle = TextStyle.Default,
+    enabled: Boolean = true,
 ) {
     var focused by remember { mutableStateOf(false) }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (showLabel && title.isNotEmpty()) Body(title, size = 13.sp, weight = FontWeight.SemiBold, color = labelColor)
         BasicTextField(
             value = value, onValueChange = onValueChange,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)
                 .onFocusChanged { focused = it.isFocused }
                 .background(Palette.White, RoundedCornerShape(Corners.Input))

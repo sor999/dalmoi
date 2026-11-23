@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -51,26 +53,67 @@ fun CrewListScreen(
     onCreate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    CrewListLayout(
+        code = state.inviteCode,
+        onCode = onCode,
+        onJoin = onJoin,
+        crews = listOf(
+            CrewListItem(label(R.string.sample_crew), label(R.string.crew_member_count), true, onCrew, state.runName),
+            CrewListItem(label(R.string.sample_company_crew), label(R.string.crew_company_count), false, onCrew),
+        ),
+        count = label(R.string.crew_my_count),
+        onCreate = onCreate,
+        modifier = modifier,
+        joinError = if (state.inviteError) label(R.string.crew_invalid) else null,
+    )
+}
+
+internal data class CrewListItem(
+    val name: String,
+    val count: String,
+    val owner: Boolean,
+    val onClick: () -> Unit,
+    val runName: String? = null,
+)
+
+@Composable
+internal fun CrewListLayout(
+    code: String,
+    onCode: (String) -> Unit,
+    onJoin: () -> Unit,
+    crews: List<CrewListItem>,
+    count: String,
+    onCreate: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onBack: (() -> Unit)? = null,
+    joinError: String? = null,
+) {
     var showCreate by rememberSaveable { mutableStateOf(false) }
     var name by rememberSaveable { mutableStateOf("") }
     Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(
+        modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(
             horizontal = 20.dp,
             vertical = 12.dp,
         ),
 
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Body(label(R.string.nav_crews), Modifier.weight(1f), size = 24.sp, weight = FontWeight.Bold)
-            ActionButton(
-                label(R.string.crew_create),
-                { showCreate = true },
-                height = 36.dp,
-                fontSize = 13.sp,
-                radius = 10.dp,
-                fillWidth = false,
-            )
+        if (onBack != null) {
+            TopBar(label(R.string.crew_join), onBack)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Body(label(R.string.nav_crews), Modifier.weight(1f), size = 24.sp, weight = FontWeight.Bold)
+                ActionButton(
+                    label(R.string.crew_create),
+                    { showCreate = true },
+                    enabled = enabled,
+                    height = 36.dp,
+                    fontSize = 13.sp,
+                    radius = 10.dp,
+                    fillWidth = false,
+                )
+            }
         }
         ContentCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -81,16 +124,18 @@ fun CrewListScreen(
                 ) {
                     LabeledInput(
                         label(R.string.crew_code),
-                        state.inviteCode,
+                        code,
                         onCode,
                         Modifier.weight(1f),
                         strong = true,
                         numeric = true,
                         showLabel = false,
+                        enabled = enabled,
                     )
                     ActionButton(
                         label(R.string.crew_join_action),
                         onJoin,
+                        enabled = enabled && code.isNotBlank(),
                         height = 48.dp,
                         color = Palette.Lime,
 
@@ -100,31 +145,22 @@ fun CrewListScreen(
                         fillWidth = false,
                     )
                 }
-                if (state.inviteError) Body(label(R.string.crew_invalid), size = 13.sp, color = Palette.Error)
+                joinError?.let { Body(it, size = 13.sp, color = Palette.Error) }
             }
         }
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Body(
-                label(R.string.crew_my_count),
-                size = 13.sp,
-                weight = FontWeight.SemiBold,
-                color = Palette.Secondary,
-            )
-            CrewCard(
-                label(R.string.sample_crew),
-                label(R.string.crew_member_count),
-                true,
-                onCrew,
-                state.runName,
-            )
-            CrewCard(label(R.string.sample_company_crew), label(R.string.crew_company_count), false, onCrew)
+        if (onBack == null) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Body(count, size = 13.sp, weight = FontWeight.SemiBold, color = Palette.Secondary)
+                if (crews.isEmpty()) Caption(label(R.string.api_empty))
+                crews.forEach { crew -> CrewCard(crew, enabled) }
+            }
         }
     }
     if (showCreate) {
         AlertDialog(
             onDismissRequest = { showCreate = false },
             title = { Body(label(R.string.crew_create), size = 20.sp, weight = FontWeight.Bold) },
-            text = { LabeledInput(label(R.string.crew_name), name, { name = it }) },
+            text = { LabeledInput(label(R.string.crew_name), name, { name = it }, enabled = enabled) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -133,7 +169,7 @@ fun CrewListScreen(
                             showCreate = false
                         }
                     },
-                    enabled = name.isNotBlank(),
+                    enabled = enabled && name.isNotBlank(),
                 ) { Body(label(R.string.crew_create_action)) }
             },
 
@@ -144,29 +180,30 @@ fun CrewListScreen(
 }
 
 @Composable
-private fun CrewCard(name: String, count: String, owner: Boolean, onClick: () -> Unit, runName: String? = null) {
-    ContentCard(Modifier.fillMaxWidth(), onClick = onClick) {
+private fun CrewCard(crew: CrewListItem, enabled: Boolean) {
+    val owner = crew.owner
+    ContentCard(Modifier.fillMaxWidth(), onClick = crew.onClick.takeIf { enabled }) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Avatar(
-                    name.take(1),
+                    crew.name.take(1),
                     size = 44.dp,
                     color = if (owner) Palette.Ink else Palette.Soft,
                     foreground = if (owner) Palette.Lime else Palette.Ink,
                 )
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Body(name, size = 15.sp, weight = FontWeight.Bold)
-                    Caption(count)
+                    Body(crew.name, size = 15.sp, weight = FontWeight.Bold)
+                    Caption(crew.count)
                 }
                 Badge(
                     label(if (owner) R.string.crew_owner else R.string.crew_member),
                     color = if (owner) Palette.Lime else Palette.Soft,
                 )
             }
-            if (runName != null) {
+            crew.runName?.let { runName ->
                 HorizontalDivider(color = Palette.Divider)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Body(label(R.string.crew_pending), size = 13.sp, color = Palette.Secondary)
@@ -177,7 +214,6 @@ private fun CrewCard(name: String, count: String, owner: Boolean, onClick: () ->
     }
 }
 
-@Suppress("DEPRECATION")
 @Composable
 fun CrewDetailScreen(
     state: DalmoiUiState,
@@ -187,8 +223,61 @@ fun CrewDetailScreen(
     onRecord: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    CrewDetailLayout(
+        name = state.crewName,
+        description = label(R.string.crew_leader_description),
+        onBack = onBack,
+        inviteCode = "RS-7K2Q9",
+        onCreateRun = onCreateRun,
+        runs = listOf(
+            CrewRunItem(
+                state.runName,
+                label(R.string.crew_running_members),
+                label(R.string.run_waiting),
+                true,
+                onWaiting,
+            ),
+            CrewRunItem(
+                label(R.string.sample_old_run),
+                label(R.string.crew_old_run_detail),
+                label(R.string.run_ended),
+                false,
+                onRecord,
+            ),
+        ),
+        members = listOf("민준 (나)", "서연", "지호", "하은").mapIndexed { index, name ->
+            CrewMemberItem(name, index == 0, index == 0)
+        },
+        modifier = modifier,
+    )
+}
+
+internal data class CrewRunItem(
+    val name: String,
+    val subtitle: String,
+    val status: String,
+    val waiting: Boolean,
+    val onClick: () -> Unit,
+)
+
+internal data class CrewMemberItem(val name: String, val isMe: Boolean, val owner: Boolean)
+
+@Suppress("DEPRECATION")
+@Composable
+internal fun CrewDetailLayout(
+    name: String,
+    description: String,
+    onBack: () -> Unit,
+    inviteCode: String?,
+    onCreateRun: (() -> Unit)?,
+    runs: List<CrewRunItem>,
+    members: List<CrewMemberItem>,
+    modifier: Modifier = Modifier,
+    onShowInvite: (() -> Unit)? = null,
+    enabled: Boolean = true,
+) {
     val clipboard = LocalClipboardManager.current
-    var copied by rememberSaveable { mutableStateOf(false) }
+    var copied by rememberSaveable(inviteCode) { mutableStateOf(false) }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Surface(color = Palette.Ink, contentColor = Palette.White) {
             Column {
@@ -202,38 +291,45 @@ fun CrewDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Body(state.crewName, size = 24.sp, weight = FontWeight.Bold)
-                        Caption(label(R.string.crew_leader_description), color = Palette.Faint)
+                        Body(name, size = 24.sp, weight = FontWeight.Bold)
+                        Caption(description, color = Palette.Faint)
                     }
-                    Row(
-                        Modifier.fillMaxWidth().background(
-                            androidx.compose.ui.graphics.Color(0xFF262624),
-                            RoundedCornerShape(14.dp),
-                        )
-                            .padding(
-                                horizontal = 14.dp,
-                                vertical = 12.dp,
-                            ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Body(label(R.string.crew_code), size = 11.sp, color = Palette.Faint)
-                            Metric("RS-7K2Q9", size = 24.sp, color = Palette.Lime)
+                    if (inviteCode != null || onShowInvite != null) {
+                        Row(
+                            Modifier.fillMaxWidth().background(Palette.RunningBorder, RoundedCornerShape(14.dp))
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Body(label(R.string.crew_code), size = 11.sp, color = Palette.Faint)
+                                if (inviteCode != null) Metric(inviteCode, size = 24.sp, color = Palette.Lime)
+                            }
+                            ActionButton(
+                                label(
+                                    when {
+                                        copied -> R.string.crew_copied
+                                        inviteCode != null -> R.string.crew_copy
+                                        else -> R.string.api_show_invite
+                                    },
+                                ),
+                                {
+                                    if (inviteCode != null) {
+                                        clipboard.setText(AnnotatedString(inviteCode))
+                                        copied = true
+                                    } else {
+                                        onShowInvite?.invoke()
+                                    }
+                                },
+                                height = 36.dp,
+                                enabled = enabled,
+                                color = Color.Transparent,
+                                foreground = Palette.White,
+                                outline = Palette.Secondary,
+                                fontSize = 13.sp,
+                                radius = 10.dp,
+                                fillWidth = false,
+                            )
                         }
-                        ActionButton(
-                            label(if (copied) R.string.crew_copied else R.string.crew_copy), {
-                                clipboard.setText(AnnotatedString("RS-7K2Q9"))
-                                copied = true
-                            },
-                            height = 36.dp,
-                            color = androidx.compose.ui.graphics.Color.Transparent,
-                            foreground = Palette.White,
-
-                            outline = androidx.compose.ui.graphics.Color(0xFF4A4A47),
-                            fontSize = 13.sp,
-                            radius = 10.dp,
-                            fillWidth = false,
-                        )
                     }
                 }
             }
@@ -247,40 +343,39 @@ fun CrewDetailScreen(
                         size = 15.sp,
                         weight = FontWeight.Bold,
                     )
-                    Body(
-                        label(R.string.crew_add_run),
-                        Modifier.clickable(onClick = onCreateRun).padding(vertical = 8.dp),
-                        size = 13.sp,
-                        weight = FontWeight.Bold,
-                    )
+                    if (onCreateRun != null) {
+                        Body(
+                            label(R.string.crew_add_run),
+                            Modifier.clickable(enabled = enabled, onClick = onCreateRun).padding(vertical = 8.dp),
+                            size = 13.sp,
+                            weight = FontWeight.Bold,
+                        )
+                    }
                 }
                 ContentCard(Modifier.fillMaxWidth(), radius = 16.dp) {
-                    CrewRunRow(state.runName, label(R.string.crew_running_members), true, onWaiting)
-                    HorizontalDivider(color = Palette.Divider)
-                    CrewRunRow(
-                        label(R.string.sample_old_run),
-                        label(R.string.crew_old_run_detail),
-                        false,
-                        onRecord,
-                    )
+                    if (runs.isEmpty()) Caption(label(R.string.api_empty), Modifier.padding(16.dp))
+                    runs.forEachIndexed { index, run ->
+                        if (index > 0) HorizontalDivider(color = Palette.Divider)
+                        CrewRunRow(run, enabled)
+                    }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Body(label(R.string.crew_members), size = 15.sp, weight = FontWeight.Bold)
-                listOf("민준 (나)", "서연", "지호", "하은").forEachIndexed { index, name ->
+                members.forEach { member ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Avatar(
-                            name.take(1),
+                            member.name.take(1),
                             size = 34.dp,
                             circle = true,
-                            outline = index == 0,
-                            color = if (index == 0) Palette.Lime else Palette.Soft,
+                            outline = member.isMe,
+                            color = if (member.isMe) Palette.Lime else Palette.Soft,
                         )
-                        Body(name, Modifier.weight(1f), weight = FontWeight.SemiBold)
-                        if (index == 0) Caption(label(R.string.crew_owner))
+                        Body(member.name, Modifier.weight(1f), weight = FontWeight.SemiBold)
+                        if (member.owner) Caption(label(R.string.crew_owner))
                     }
                 }
             }
@@ -289,21 +384,21 @@ fun CrewDetailScreen(
 }
 
 @Composable
-private fun CrewRunRow(name: String, subtitle: String, waiting: Boolean, onClick: () -> Unit) {
+private fun CrewRunRow(run: CrewRunItem, enabled: Boolean) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(
+        Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = run.onClick).padding(
             horizontal = 16.dp,
             vertical = 14.dp,
         ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Body(name, weight = FontWeight.SemiBold, color = if (waiting) Palette.Ink else Palette.Secondary)
-            Caption(subtitle)
+            Body(run.name, weight = FontWeight.SemiBold, color = if (run.waiting) Palette.Ink else Palette.Secondary)
+            if (run.subtitle.isNotBlank()) Caption(run.subtitle)
         }
         Badge(
-            label(if (waiting) R.string.run_waiting else R.string.run_ended),
-            color = if (waiting) Palette.Lime else Palette.Soft,
+            run.status,
+            color = if (run.waiting) Palette.Lime else Palette.Soft,
         )
     }
 }

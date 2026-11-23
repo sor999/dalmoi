@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -30,6 +31,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +50,7 @@ import com.sor999.dalmoi.R
 import com.sor999.dalmoi.app.demo.CourseCardData
 import com.sor999.dalmoi.app.demo.DalmoiUiState
 import com.sor999.dalmoi.app.demo.kilometers
+import com.sor999.dalmoi.domain.model.GeoPoint
 import com.sor999.dalmoi.presentation.common.component.ActionButton
 import com.sor999.dalmoi.presentation.common.component.Avatar
 import com.sor999.dalmoi.presentation.common.component.Badge
@@ -63,7 +66,60 @@ import com.sor999.dalmoi.presentation.common.map.FigmaMap
 import com.sor999.dalmoi.presentation.common.map.MapArtwork
 import com.sor999.dalmoi.presentation.common.theme.Corners
 import com.sor999.dalmoi.presentation.common.theme.Palette
-import com.sor999.dalmoi.presentation.course.CourseOption
+import com.sor999.dalmoi.presentation.course.CourseMap
+import java.time.Duration
+import java.time.Instant
+import java.util.Locale
+import kotlinx.coroutines.delay
+
+@Composable
+fun CourseOption(course: CourseCardData, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    CourseOption(course.name, kilometers(course.distanceMeters), selected, onClick, modifier) { mapModifier ->
+        FigmaMap(course.thumbnail, mapModifier)
+    }
+}
+
+@Composable
+internal fun CourseOption(
+    name: String,
+    distance: String,
+    selected: Boolean?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    thumbnail: (@Composable (Modifier) -> Unit)? = null,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.fillMaxWidth(),
+        color = Palette.White,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(
+            if (selected == true) 2.dp else 1.dp,
+            if (selected == true) Palette.Ink else Palette.Border,
+        ),
+    ) {
+        Row(
+            Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            thumbnail?.invoke(Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Body(
+                    name,
+                    size = 15.sp,
+                    weight = if (selected == true) FontWeight.Bold else FontWeight.SemiBold,
+                )
+                Caption("$distance km")
+            }
+            if (selected != null) {
+                RadioButton(selected = selected, onClick = null, enabled = enabled, modifier = Modifier.size(22.dp))
+            }
+        }
+    }
+}
 
 @Composable
 fun CreateSessionScreen(
@@ -73,7 +129,27 @@ fun CreateSessionScreen(
     onCreate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var name by rememberSaveable { mutableStateOf(state.runName) }
+    CreateSessionLayout(state.crewName, state.runName, onBack, onCreate, modifier) {
+        state.courses.forEach { course ->
+            CourseOption(course, course.id == state.selectedCourseId, { onSelect(course.id) })
+        }
+    }
+}
+
+@Composable
+internal fun CreateSessionLayout(
+    crewName: String,
+    initialName: String,
+    onBack: () -> Unit,
+    onCreate: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    ready: Boolean = true,
+    inputLabel: Int = R.string.run_name,
+    submitLabel: Int = R.string.run_create_room,
+    courseOptions: @Composable ColumnScope.() -> Unit,
+) {
+    var name by rememberSaveable { mutableStateOf(initialName) }
     Column(modifier.fillMaxSize().imePadding()) {
         TopBar(label(R.string.run_create_title), onBack)
         Column(
@@ -84,117 +160,125 @@ fun CreateSessionScreen(
             verticalArrangement = Arrangement.spacedBy(22.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                LabeledInput(label(R.string.run_name), name, { name = it }, strong = true)
-                Caption(state.crewName, color = Palette.Muted)
+                LabeledInput(label(inputLabel), name, { name = it }, strong = true, enabled = enabled)
+                Caption(crewName, color = Palette.Muted)
             }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SectionTitle(label(R.string.run_common_course), detail = label(R.string.run_course_fixed))
-                state.courses.forEach { course ->
-                    CourseOption(
-                        course,
-                        course.id == state.selectedCourseId,
-                        { onSelect(course.id) },
-                    )
-                }
+                courseOptions()
             }
         }
         ActionButton(
-            label(R.string.run_create_room),
+            label(submitLabel),
             { onCreate(name) },
             Modifier.padding(
                 horizontal = 20.dp,
                 vertical = 12.dp,
             ),
-            enabled = name.isNotBlank(),
+            enabled = enabled && ready && name.isNotBlank(),
         )
     }
 }
 
+internal data class WaitingRunner(val name: String, val status: String, val joined: Boolean, val highlight: Boolean)
+
 @Composable
 fun WaitingRoomScreen(state: DalmoiUiState, onBack: () -> Unit, onLaunch: () -> Unit, modifier: Modifier = Modifier) {
+    val runners = listOf("민준 · 크루장", "서연", "지호", "하은").mapIndexed { index, name ->
+        val joined = index != 3
+        WaitingRunner(name, label(if (joined) R.string.run_joined else R.string.run_not_joined), joined, index == 0)
+    }
+    WaitingRoomLayout(
+        title = state.runName,
+        crewName = state.crewName,
+        status = "WAITING",
+        course = state.course.name,
+        distance = kilometers(state.course.distanceMeters),
+        attendance = label(R.string.run_participant_numbers),
+        runners = runners,
+        onBack = onBack,
+        modifier = modifier,
+        map = { FigmaMap(MapArtwork.Waiting, Modifier.fillMaxSize()) },
+    ) {
+        ActionButton(
+            label(R.string.run_launch),
+            onLaunch,
+            color = Palette.Lime,
+            foreground = Palette.Ink,
+            outline = Palette.Ink,
+        )
+        Body(label(R.string.run_launch_note), size = 12.sp, color = Palette.Muted)
+    }
+}
+
+@Composable
+internal fun WaitingRoomLayout(
+    title: String,
+    crewName: String,
+    status: String,
+    course: String,
+    distance: String,
+    attendance: String,
+    runners: List<WaitingRunner>,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    header: Int = R.string.run_waiting_room,
+    map: @Composable () -> Unit,
+    actions: @Composable ColumnScope.() -> Unit,
+) {
     Column(modifier.fillMaxSize()) {
-        TopBar(
-            label(R.string.run_waiting_room),
-            onBack,
-        ) {
-            Badge(
-                "WAITING",
-                color = Palette.Ink,
-                foreground = Palette.Lime,
-            )
+        TopBar(label(header), onBack) {
+            Badge(status, color = Palette.Ink, foreground = Palette.Lime)
         }
         Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(
-                horizontal = 20.dp,
-                vertical = 4.dp,
-            ),
-
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Body(state.runName, size = 26.sp, weight = FontWeight.Bold)
-                Body(state.crewName, size = 13.sp, color = Palette.Secondary)
+                Body(title, size = 26.sp, weight = FontWeight.Bold)
+                Body(crewName, size = 13.sp, color = Palette.Secondary)
             }
             Box(Modifier.fillMaxWidth().aspectRatio(304f / 150f).clip(RoundedCornerShape(18.dp))) {
-                FigmaMap(MapArtwork.Waiting, Modifier.fillMaxSize())
-                Surface(
-                    Modifier.align(Alignment.BottomEnd).padding(10.dp),
-                    shape = RoundedCornerShape(10.dp),
-                ) {
+                map()
+                Surface(Modifier.align(Alignment.BottomEnd).padding(10.dp), shape = RoundedCornerShape(10.dp)) {
                     Row(
-                        Modifier.padding(
-                            horizontal = 10.dp,
-                            vertical = 6.dp,
-                        ),
+                        Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Body(state.course.name, size = 12.sp, weight = FontWeight.SemiBold)
-                        Metric(
-                            kilometers(state.course.distanceMeters),
-                            size = 17.sp,
-                            unit = label(R.string.course_kilometers),
-                            unitSize = 17.sp,
-                        )
+                        Body(course, size = 12.sp, weight = FontWeight.SemiBold)
+                        Metric(distance, size = 17.sp, unit = label(R.string.course_kilometers), unitSize = 17.sp)
                     }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SectionTitle(
-                    label(R.string.run_participants),
-                    detail = label(R.string.run_participant_numbers),
-                )
+                SectionTitle(label(R.string.run_participants), detail = attendance)
                 ContentCard(Modifier.fillMaxWidth(), radius = 16.dp) {
-                    listOf("민준 · 크루장", "서연", "지호", "하은").forEachIndexed { index, name ->
+                    if (runners.isEmpty()) Caption(label(R.string.api_empty), Modifier.padding(14.dp))
+                    runners.forEachIndexed { index, runner ->
                         if (index > 0) HorizontalDivider(color = Palette.Divider)
                         Row(
-                            Modifier.padding(
-                                horizontal = 14.dp,
-                                vertical = 12.dp,
-                            ),
+                            Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
-
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             Avatar(
-                                name.take(1),
+                                runner.name.take(1),
                                 size = 32.dp,
                                 circle = true,
-                                outline = index == 0,
-                                color = if (index == 0) Palette.Lime else Palette.Soft,
+                                outline = runner.highlight,
+                                color = if (runner.highlight) Palette.Lime else Palette.Soft,
                             )
                             Body(
-                                name,
+                                runner.name,
                                 Modifier.weight(1f),
-                                weight = if (index == 3) FontWeight.Normal else FontWeight.SemiBold,
-
-                                color = if (index == 3) Palette.Muted else Palette.Ink,
+                                weight = if (runner.joined) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (runner.joined) Palette.Ink else Palette.Muted,
                             )
                             Body(
-                                label(if (index == 3) R.string.run_not_joined else R.string.run_joined),
+                                runner.status,
                                 size = 12.sp,
-
-                                color = if (index == 3) Palette.Faint else Palette.Positive,
+                                color = if (runner.joined) Palette.Positive else Palette.Faint,
                             )
                         }
                     }
@@ -202,48 +286,63 @@ fun WaitingRoomScreen(state: DalmoiUiState, onBack: () -> Unit, onLaunch: () -> 
             }
         }
         Column(
-            Modifier.padding(
-                horizontal = 20.dp,
-                vertical = 12.dp,
-            ),
+            Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            ActionButton(
-                label(R.string.run_launch),
-                onLaunch,
-                color = Palette.Lime,
-                foreground = Palette.Ink,
-                outline = Palette.Ink,
-            )
-            Body(label(R.string.run_launch_note), size = 12.sp, color = Palette.Muted)
-        }
+            content = actions,
+        )
     }
 }
 
+internal data class LiveRunningContent(val course: List<GeoPoint>, val startedAt: Instant?)
+
 @Composable
 fun RunningScreen(state: DalmoiUiState, onFinish: () -> Unit, modifier: Modifier = Modifier) {
+    RunningLayout(state.mvp, state.disconnected, kilometers(state.course.distanceMeters), onFinish, modifier)
+}
+
+@Composable
+internal fun RunningLayout(
+    mvp: Boolean,
+    disconnected: Boolean,
+    plannedDistance: String,
+    onFinish: () -> Unit,
+    modifier: Modifier = Modifier,
+    live: LiveRunningContent? = null,
+    enabled: Boolean = true,
+) {
+    val elapsed by produceState(0L, live?.startedAt) {
+        val startedAt = live?.startedAt ?: return@produceState
+        while (true) {
+            value = Duration.between(startedAt, Instant.now()).seconds.coerceAtLeast(0)
+            delay(1_000)
+        }
+    }
     var endDialog by rememberSaveable { mutableStateOf(false) }
-    BackHandler { endDialog = true }
-    val dark = !state.mvp
+    BackHandler { if (enabled) endDialog = true }
+    val dark = !mvp
     val background = if (dark) Palette.Running else Palette.White
     val foreground = if (dark) Palette.White else Palette.Ink
     BoxWithConstraints(modifier.fillMaxSize().background(background)) {
         val panelLimit = maxHeight * .7f
-        FigmaMap(
-            if (state.mvp) {
-                MapArtwork.MvpRunning
-            } else if (state.disconnected) {
-                MapArtwork.RunningError
-            } else {
-                MapArtwork.Running
-            },
+        if (live != null) {
+            CourseMap(live.course, Modifier.fillMaxSize(), nightMode = true)
+        } else {
+            FigmaMap(
+                if (mvp) {
+                    MapArtwork.MvpRunning
+                } else if (disconnected) {
+                    MapArtwork.RunningError
+                } else {
+                    MapArtwork.Running
+                },
 
-            Modifier.fillMaxSize(),
-            fullScreen = true,
-        )
+                Modifier.fillMaxSize(),
+                fullScreen = true,
+            )
+        }
         Column(Modifier.fillMaxSize()) {
-            if (state.mvp) {
+            if (mvp) {
                 Surface {
                     Column(
                         Modifier.fillMaxWidth().padding(
@@ -256,6 +355,12 @@ fun RunningScreen(state: DalmoiUiState, onFinish: () -> Unit, modifier: Modifier
                         Body(label(R.string.run_mvp_people), size = 13.sp, color = Palette.Positive)
                     }
                 }
+            } else if (live != null) {
+                StatusChip(
+                    label(R.string.run_stopped),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    dot = Palette.Muted,
+                )
             } else {
                 Row(
                     Modifier.fillMaxWidth().padding(
@@ -265,12 +370,12 @@ fun RunningScreen(state: DalmoiUiState, onFinish: () -> Unit, modifier: Modifier
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     StatusChip(
-                        label(if (state.disconnected) R.string.run_stopped else R.string.run_sharing),
-                        dot = if (state.disconnected) Palette.Muted else Palette.Lime,
+                        label(if (disconnected) R.string.run_stopped else R.string.run_sharing),
+                        dot = if (disconnected) Palette.Muted else Palette.Lime,
                     )
-                    StatusChip(label(if (state.disconnected) R.string.run_last_received else R.string.run_received))
+                    StatusChip(label(if (disconnected) R.string.run_last_received else R.string.run_received))
                 }
-                if (state.disconnected) {
+                if (disconnected) {
                     Surface(
                         Modifier.padding(
                             horizontal = 14.dp,
@@ -313,7 +418,7 @@ fun RunningScreen(state: DalmoiUiState, onFinish: () -> Unit, modifier: Modifier
                         ),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    if (state.mvp) {
+                    if (mvp) {
                         Row {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Caption(label(R.string.run_distance))
@@ -343,7 +448,11 @@ fun RunningScreen(state: DalmoiUiState, onFinish: () -> Unit, modifier: Modifier
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Caption(label(R.string.run_duration), color = Palette.Muted)
-                            Metric("14:34", size = 76.sp, color = Palette.Lime)
+                            Metric(
+                                if (live == null) "14:34" else formatElapsed(elapsed),
+                                size = 76.sp,
+                                color = Palette.Lime,
+                            )
                         }
                         Row(
                             Modifier.background(
@@ -354,42 +463,46 @@ fun RunningScreen(state: DalmoiUiState, onFinish: () -> Unit, modifier: Modifier
                         ) {
                             RunningMetric(
                                 label(R.string.run_distance),
-                                "2.31",
+                                if (live == null) "2.31" else "0.00",
                                 Palette.White,
                                 Modifier.weight(1f),
                             )
                             RunningMetric(
                                 label(R.string.run_course_distance),
-                                kilometers(state.course.distanceMeters),
+                                plannedDistance,
                                 Palette.Muted,
                                 Modifier.weight(1f),
                             )
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            PeerChip(
-                                label(R.string.sample_peer_seoyeon),
-                                label(R.string.run_peer_fresh_time),
-                                Palette.White,
-                                Modifier.weight(1f),
-                            )
-                            PeerChip(
-                                label(R.string.sample_peer_jiho),
-                                label(R.string.run_peer_delay),
-                                Palette.Delay,
-                                Modifier.weight(1f),
-                            )
+                        if (live != null) {
+                            Caption(label(R.string.api_gps_pending), color = Palette.Faint)
+                        } else {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                PeerChip(
+                                    label(R.string.sample_peer_seoyeon),
+                                    label(R.string.run_peer_fresh_time),
+                                    Palette.White,
+                                    Modifier.weight(1f),
+                                )
+                                PeerChip(
+                                    label(R.string.sample_peer_jiho),
+                                    label(R.string.run_peer_delay),
+                                    Palette.Delay,
+                                    Modifier.weight(1f),
+                                )
+                            }
                         }
                         val endLabel = label(R.string.run_end)
                         Box(
                             Modifier.fillMaxWidth().heightIn(min = 56.dp)
                                 .background(background, RoundedCornerShape(16.dp))
                                 .then(Modifier.border(2.dp, Palette.White, RoundedCornerShape(16.dp)))
-                                .combinedClickable(onClick = {}, onLongClick = { endDialog = true })
+                                .combinedClickable(enabled = enabled, onClick = {}, onLongClick = { endDialog = true })
                                 .semantics {
                                     customActions = listOf(
                                         CustomAccessibilityAction(endLabel) {
-                                            endDialog = true
-                                            true
+                                            if (enabled) endDialog = true
+                                            enabled
                                         },
                                     )
                                 }
@@ -414,6 +527,12 @@ fun RunningScreen(state: DalmoiUiState, onFinish: () -> Unit, modifier: Modifier
             onFinish()
         })
     }
+}
+
+internal fun formatElapsed(seconds: Long): String = if (seconds >= 3600) {
+    String.format(Locale.ROOT, "%d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60)
+} else {
+    String.format(Locale.ROOT, "%02d:%02d", seconds / 60, seconds % 60)
 }
 
 @Composable

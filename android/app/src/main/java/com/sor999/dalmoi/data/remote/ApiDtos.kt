@@ -4,6 +4,7 @@ import com.sor999.dalmoi.domain.model.Course
 import com.sor999.dalmoi.domain.model.Crew
 import com.sor999.dalmoi.domain.model.CrewMember
 import com.sor999.dalmoi.domain.model.Dashboard
+import com.sor999.dalmoi.domain.model.FeaturedWaitingSession
 import com.sor999.dalmoi.domain.model.GeoPoint
 import com.sor999.dalmoi.domain.model.Member
 import com.sor999.dalmoi.domain.model.RunRecord
@@ -55,6 +56,7 @@ internal data class CourseDto(
     val estimatedDistanceKm: Double,
     val createdAt: String,
     val points: List<PointDto> = emptyList(),
+    val isLoop: Boolean = false,
 ) {
     fun toDomain() = Course(
         courseId,
@@ -64,6 +66,7 @@ internal data class CourseDto(
             it.toDomain()
         },
         Instant.parse(createdAt),
+        isLoop,
     )
 }
 
@@ -113,9 +116,32 @@ internal data class CrewDto(
 internal data class SummaryDto<T>(val totalCount: Long, val items: List<T>)
 
 @Serializable
+internal data class FeaturedWaitingDto(
+    val sessionId: Long,
+    val title: String,
+    val status: String,
+    val crewName: String,
+    val courseTitle: String,
+    val estimatedDistanceKm: Double,
+    val participantCount: Long,
+    val crewMemberCount: Long,
+) {
+    fun toDomain() = FeaturedWaitingSession(
+        sessionId,
+        title,
+        status,
+        crewName,
+        courseTitle,
+        estimatedDistanceKm,
+        participantCount,
+        crewMemberCount,
+    )
+}
+
+@Serializable
 internal data class HomeDto(
     val member: MemberDto,
-    val featuredWaitingSession: WaitingDto? = null,
+    val featuredWaitingSession: FeaturedWaitingDto? = null,
     val crewSummary: SummaryDto<CrewDto>,
     val courseSummary: SummaryDto<CourseDto>,
 ) {
@@ -124,6 +150,8 @@ internal data class HomeDto(
         crewSummary.items.map { it.toDomain() },
         courseSummary.items.map { it.toDomain() },
         featuredWaitingSession?.toDomain(),
+        crewSummary.totalCount,
+        courseSummary.totalCount,
     )
 }
 
@@ -142,7 +170,15 @@ internal data class CourseSnapshotDto(
 )
 
 @Serializable
-internal data class ParticipantDto(val nickname: String, val status: String)
+internal data class ParticipantDto(val nickname: String, val status: String, val memberId: Long? = null)
+
+@Serializable
+internal data class MemberStatusDto(
+    val memberId: Long,
+    val nickname: String,
+    val role: String,
+    val participationStatus: String,
+)
 
 @Serializable
 internal data class SessionDto(
@@ -157,6 +193,9 @@ internal data class SessionDto(
     val course: CourseSnapshotDto,
     val participants: List<ParticipantDto>,
     val createdAt: String,
+    val crewMemberCount: Long = participants.size.toLong(),
+    val members: List<MemberStatusDto>? = null,
+    val myStartedAt: String? = null,
 ) {
     fun toDomain() = RunningSession(
         sessionId, crewId, title, crewName, status, myParticipationStatus,
@@ -168,7 +207,11 @@ internal data class SessionDto(
             course.points.map { it.toDomain() },
             Instant.parse(createdAt),
         ),
-        participants.map { Runner(it.nickname, it.status) },
+        participants.map { Runner(it.nickname, it.status, it.memberId) },
+        crewMemberCount,
+        members?.map { Runner(it.nickname, it.participationStatus, it.memberId, it.role) }
+            ?: participants.map { Runner(it.nickname, it.status, it.memberId) },
+        myStartedAt?.let(Instant::parse),
     )
 }
 
@@ -180,6 +223,9 @@ internal data class RecordDto(
     val durationSeconds: Long,
     val endedAt: String,
     val actualRoute: List<PointDto> = emptyList(),
+    val plannedDistanceKm: Double? = null,
+    val plannedRoute: List<PointDto> = emptyList(),
+    val crewName: String? = null,
 ) {
     fun toDomain() = RunRecord(
         recordId,
@@ -188,6 +234,9 @@ internal data class RecordDto(
         durationSeconds,
         Instant.parse(endedAt),
         actualRoute.map { it.toDomain() },
+        plannedDistanceKm,
+        plannedRoute.map { it.toDomain() },
+        crewName,
     )
 }
 

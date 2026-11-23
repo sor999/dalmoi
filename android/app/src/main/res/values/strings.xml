@@ -41,6 +41,11 @@
     <string name="crew_invalid">유효하지 않은 초대코드입니다.</string>
     <string name="crew_join">초대코드로 가입</string>
     <string name="crew_join_action">가입</string>
+    <string name="crew_count_format">멤버 %1$d / 10</string>
+    <string name="crew_leader_description_format">크루장 %1$s · 멤버 %2$d / 10</string>
+    <string name="crew_my_count_format">내 크루 %1$d</string>
+    <string name="crew_self_format">%1$s (나)</string>
+    <string name="run_attendance_format">%1$d / %2$d</string>
     <string name="crew_leader_description">크루장 민준 · 멤버 4 / 10</string>
     <string name="crew_member">크루원</string>
     <string name="crew_member_count">멤버 4 / 10</string>
@@ -54,6 +59,13 @@
     <string name="crew_running">그룹 러닝</string>
     <string name="crew_running_members">반포 한강 루프 · 참가 3명</string>
     <string name="home_enter">대기방 입장</string>
+    <string name="home_greeting_format">안녕하세요, %1$s님</string>
+    <string name="home_profile">프로필 메뉴</string>
+    <string name="home_run_description_format">%1$s · %2$s %3$.2f km</string>
+    <string name="home_run_participants_format">참가 %1$d / %2$d명</string>
+    <string name="home_crew_owner_format">크루장 · 멤버 %1$d명</string>
+    <string name="home_crew_members_format">멤버 %1$d명</string>
+    <string name="home_total_format">전체 %1$d</string>
     <string name="home_greeting">안녕하세요, 민준님</string>
     <string name="home_my_courses">내 코스</string>
     <string name="home_my_crews">내 크루</string>

@@ -6,13 +6,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +35,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,7 +53,10 @@ import com.sor999.dalmoi.presentation.common.component.LabeledInput
 import com.sor999.dalmoi.presentation.common.component.Metric
 import com.sor999.dalmoi.presentation.common.component.label
 import com.sor999.dalmoi.presentation.common.theme.Corners
+import com.sor999.dalmoi.presentation.common.theme.DIALOG_SCRIM_ALPHA
 import com.sor999.dalmoi.presentation.common.theme.Palette
+import com.sor999.dalmoi.presentation.common.theme.Spacing
+import com.sor999.dalmoi.presentation.common.theme.TextSizes
 import java.util.Locale
 import kotlin.math.asin
 import kotlin.math.cos
@@ -81,38 +90,61 @@ internal fun LiveCourseEditor(
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 CourseMap(points, Modifier.fillMaxSize(), onPickPoint = onPoint, recenterRequest = recenterRequest)
-                Row(
-                    Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 14.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    Modifier.fillMaxWidth().windowInsetsPadding(
+                        WindowInsets.statusBars.union(WindowInsets(top = 32.dp)),
+                    ),
                 ) {
-                    Surface(
-                        onClick = onBack,
-                        enabled = !busy,
-                        modifier = Modifier.size(40.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Palette.White,
-                        shadowElevation = 3.dp,
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Image(
-                                painterResource(R.drawable.ic_course_back),
-                                label(R.string.course_back),
-                                Modifier.size(8.dp, 17.dp),
-                            )
+                        Surface(
+                            onClick = onBack,
+                            enabled = !busy,
+                            modifier = Modifier.size(40.dp),
+                            shape = RoundedCornerShape(Corners.Input),
+                            color = Palette.White,
+                            shadowElevation = 3.dp,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Image(
+                                    painterResource(R.drawable.ic_course_back),
+                                    label(R.string.course_back),
+                                    Modifier.size(8.dp, 17.dp),
+                                )
+                            }
+                        }
+                        Surface(
+                            modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                            shape = RoundedCornerShape(Corners.Input),
+                            color = Palette.White,
+                            shadowElevation = 3.dp,
+                        ) {
+                            Box(
+                                Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                contentAlignment = Alignment.CenterStart,
+                            ) {
+                                Body(label(R.string.course_title), size = TextSizes.Label, weight = FontWeight.SemiBold)
+                            }
                         }
                     }
-                    Surface(
-                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Palette.White,
-                        shadowElevation = 3.dp,
-                    ) {
-                        Box(
-                            Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            contentAlignment = Alignment.CenterStart,
+                    if (error != null && !naming) {
+                        Surface(
+                            Modifier.fillMaxWidth().padding(start = 14.dp, top = Spacing.Tiny, end = 14.dp),
+                            shape = RoundedCornerShape(Corners.Input),
+                            color = Palette.Error,
                         ) {
-                            Body(label(R.string.course_title), size = 14.sp, weight = FontWeight.Bold)
+                            Body(
+                                error,
+                                Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
+                                size = 13.sp,
+                                color = Palette.White,
+                                weight = FontWeight.SemiBold,
+                                lineHeight = 16.sp,
+                            )
                         }
                     }
                 }
@@ -153,7 +185,12 @@ internal fun LiveCourseEditor(
                 ) {
                     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("api-loading"))
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Body(label(R.string.course_distance), size = 12.sp * panelScale, color = Palette.Secondary)
+                        Body(
+                            label(R.string.course_distance),
+                            size = TextSizes.Caption * panelScale,
+                            color = Palette.Secondary,
+                            weight = FontWeight.Medium,
+                        )
                         Metric(
                             distance,
                             size = 44.sp * panelScale,
@@ -163,26 +200,29 @@ internal fun LiveCourseEditor(
                     }
                     Body(
                         label(R.string.course_distance_note),
+                        Modifier.heightIn(min = 33.dp * panelScale),
                         size = 11.5.sp * panelScale,
                         lineHeight = 16.1.sp * panelScale,
                         color = Palette.Muted,
                     )
-                    if (limitReached || error != null) {
-                        Body(error ?: label(R.string.course_limit), color = Palette.Error, size = 12.sp)
+                    if (limitReached) {
+                        Body(label(R.string.course_limit), color = Palette.Error, size = TextSizes.Caption)
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp * panelScale)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small * panelScale)) {
                         val canEdit = !busy && points.isNotEmpty()
                         ActionButton(
                             label(R.string.course_undo), onUndo, Modifier.weight(1f), height = 46.dp * panelScale,
                             color = Palette.White, foreground = Palette.Ink, outline = Palette.InputBorder,
-                            enabled = canEdit, fontSize = 14.sp * panelScale, radius = 12.dp,
+                            enabled = canEdit, fontSize = TextSizes.Label * panelScale, radius = Corners.Input,
+                            fontWeight = FontWeight.SemiBold, outlineWidth = 1.dp,
                         )
                         ActionButton(
                             label(R.string.course_reset), {
                                 confirmingReset = true
                             }, Modifier.weight(1f), height = 46.dp * panelScale,
                             color = Palette.White, foreground = Palette.Ink, outline = Palette.InputBorder,
-                            enabled = canEdit, fontSize = 14.sp * panelScale, radius = 12.dp,
+                            enabled = canEdit, fontSize = TextSizes.Label * panelScale, radius = Corners.Input,
+                            fontWeight = FontWeight.SemiBold, outlineWidth = 1.dp,
                         )
                     }
                     ActionButton(
@@ -228,7 +268,7 @@ private fun CourseNameDialog(
         properties = DialogProperties(dismissOnBackPress = !busy, dismissOnClickOutside = !busy),
     ) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-        SideEffect { window?.setDimAmount(.5f) }
+        SideEffect { window?.setDimAmount(DIALOG_SCRIM_ALPHA) }
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(Corners.Dialog),
@@ -237,36 +277,39 @@ private fun CourseNameDialog(
         ) {
             Column(
                 Modifier.verticalScroll(rememberScrollState())
-                    .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(start = Spacing.Large, top = Spacing.Large, end = Spacing.Large, bottom = Spacing.Card),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Card),
             ) {
-                Body(label(R.string.course_save), size = 20.sp, weight = FontWeight.Bold)
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Body(label(R.string.course_save), size = TextSizes.DialogTitle, weight = FontWeight.Bold)
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
                     LabeledInput(label(R.string.course_name), title, { if (!busy) onTitle(it) })
-                    error?.let { Body(it, color = Palette.Error, size = 12.sp) }
+                    error?.let { Body(it, color = Palette.Error, size = TextSizes.Caption) }
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Small, Alignment.End),
+                ) {
                     ActionButton(
                         label(R.string.course_cancel),
                         onDismiss,
-                        height = 48.dp,
+                        height = Spacing.Touch,
                         color = Palette.White,
                         foreground = Palette.Ink,
                         outline = Palette.InputBorder,
                         enabled = !busy,
-                        fontSize = 14.sp,
+                        fontSize = TextSizes.Label,
                         fillWidth = false,
-                        horizontalPadding = 16.dp,
+                        horizontalPadding = Spacing.Card,
                     )
                     ActionButton(
                         label(R.string.course_save),
                         onSave,
                         modifier = Modifier.testTag("course-name-confirm"),
-                        height = 48.dp,
+                        height = Spacing.Touch,
                         enabled = title.isNotBlank() && !busy,
-                        fontSize = 14.sp,
+                        fontSize = TextSizes.Label,
                         fillWidth = false,
-                        horizontalPadding = 20.dp,
+                        horizontalPadding = Spacing.Page,
                     )
                 }
             }

@@ -54,6 +54,14 @@ class HttpBackendRepositoryTest {
             val home = repository.home().getOrThrow()
             assertEquals("러너", home.member.nickname)
             assertTrue(home.crews.isEmpty())
+            assertEquals(5L, home.courseCount)
+            assertEquals("한강 루프", home.courses.single().title)
+            val waiting = requireNotNull(home.waiting)
+            assertEquals("새벽 한강 크루", waiting.crewName)
+            assertEquals("한강 루프", waiting.courseTitle)
+            assertEquals(5.24, waiting.distanceKm, 0.001)
+            assertEquals(3L, waiting.participantCount)
+            assertEquals(4L, waiting.crewMemberCount)
             assertEquals("refresh", store.current?.refreshToken)
             assertTrue(repository.signedIn.value)
         }
@@ -345,14 +353,25 @@ class HttpBackendRepositoryTest {
       "email": "runner@example.com",
       "nickname": "러너"
     },
-    "featuredWaitingSession": null,
+    "featuredWaitingSession": {
+      "sessionId": 12,
+      "title": "목요일 새벽 5K",
+      "status": "WAITING",
+      "crewName": "새벽 한강 크루",
+      "courseTitle": "한강 루프",
+      "estimatedDistanceKm": 5.24,
+      "participantCount": 3,
+      "crewMemberCount": 4
+    },
     "crewSummary": {
       "totalCount": 0,
       "items": []
     },
     "courseSummary": {
-      "totalCount": 0,
-      "items": []
+      "totalCount": 5,
+      "items": [
+        {"courseId": 7, "title": "한강 루프", "estimatedDistanceKm": 5.24, "createdAt": "2026-11-20T00:00:00Z"}
+      ]
     }
   }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -56,6 +57,7 @@ import com.sor999.dalmoi.presentation.common.map.MapArtwork
 import com.sor999.dalmoi.presentation.common.map.MapPoint
 import com.sor999.dalmoi.presentation.common.theme.Corners
 import com.sor999.dalmoi.presentation.common.theme.Palette
+import com.sor999.dalmoi.presentation.session.CourseOption
 
 @Composable
 fun CourseEditorScreen(
@@ -268,6 +270,36 @@ fun CourseDetailScreen(
     onCreateRun: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    CourseDetailLayout(
+        course.name,
+        kilometers(course.distanceMeters),
+        course.createdOn,
+        course.points.isEmpty() || course.points.first() == course.points.last(),
+        onBack,
+        onCreateRun,
+        modifier,
+    ) {
+        FigmaMap(
+            MapArtwork.Course,
+            Modifier.fillMaxSize(),
+            editedRoute = course.points.takeIf { it.isNotEmpty() }
+                ?.map { MapPoint(it.x / 344f * 312f, it.y / 744f * 300f) },
+        )
+    }
+}
+
+@Composable
+internal fun CourseDetailLayout(
+    title: String,
+    distance: String,
+    createdOn: String,
+    loop: Boolean,
+    onBack: () -> Unit,
+    onCreateRun: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    map: @Composable () -> Unit,
+) {
     Column(modifier.fillMaxSize()) {
         TopBar(label(R.string.course_detail), onBack)
         Column(
@@ -279,24 +311,10 @@ fun CourseDetailScreen(
                     horizontal = 16.dp,
                 ).fillMaxWidth().aspectRatio(312f / 300f).clip(RoundedCornerShape(20.dp)),
             ) {
-                FigmaMap(
-                    MapArtwork.Course,
-                    Modifier.fillMaxSize(),
-                    editedRoute = course.points.takeIf { it.isNotEmpty() }
-                        ?.map { MapPoint(it.x / 344f * 312f, it.y / 744f * 300f) },
-                )
+                map()
                 Surface(Modifier.padding(12.dp), shape = RoundedCornerShape(99.dp), color = Palette.Ink) {
                     Body(
-                        label(
-                            if (course.points.isNotEmpty() &&
-                                course.points.first() != course.points.last()
-                            ) {
-                                R.string.course_open_type
-                            } else {
-                                R.string.course_loop_type
-                            },
-                        ),
-
+                        label(if (loop) R.string.course_loop_type else R.string.course_open_type),
                         Modifier.padding(
                             horizontal = 10.dp,
                             vertical = 5.dp,
@@ -309,26 +327,32 @@ fun CourseDetailScreen(
             }
             Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Body(course.name, size = 24.sp, weight = FontWeight.Bold)
-                    Caption(
+                    Body(title, size = 24.sp, weight = FontWeight.Bold)
+                    Body(
                         androidx.compose.ui.res.stringResource(
                             R.string.course_created_format,
-                            course.createdOn,
+                            createdOn,
                         ),
+                        size = 13.sp,
+                        color = Palette.Secondary,
                     )
                 }
-                Column(
-                    Modifier.fillMaxWidth().background(Palette.Border).padding(1.dp)
-                        .background(Palette.Background).padding(vertical = 14.dp),
-                ) {
-                    Caption(label(R.string.course_distance))
-                    Metric(
-                        kilometers(course.distanceMeters),
-                        size = 32.sp,
-                        unit = label(R.string.course_kilometers),
-                    )
+                Column(Modifier.fillMaxWidth()) {
+                    HorizontalDivider(color = Palette.Border)
+                    Column(
+                        Modifier.padding(vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Caption(label(R.string.course_distance))
+                        Metric(
+                            distance,
+                            size = 32.sp,
+                            unit = label(R.string.course_kilometers),
+                        )
+                    }
+                    HorizontalDivider(color = Palette.Border)
                 }
-                Caption(label(R.string.course_detail_note), color = Palette.Muted)
+                Body(label(R.string.course_detail_note), size = 12.sp, lineHeight = 17.sp, color = Palette.Muted)
             }
         }
         ActionButton(
@@ -338,6 +362,7 @@ fun CourseDetailScreen(
                 horizontal = 20.dp,
                 vertical = 12.dp,
             ),
+            enabled = enabled,
         )
     }
 }
@@ -349,13 +374,25 @@ fun CourseListScreen(
     onCourse: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    CourseListLayout(onEditor, modifier) {
+        state.courses.forEach { course -> CourseOption(course, false, { onCourse(course.id) }) }
+    }
+}
+
+@Composable
+internal fun CourseListLayout(
+    onEditor: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Body(label(R.string.nav_courses), size = 24.sp, weight = FontWeight.Bold)
-        ActionButton(label(R.string.course_title), onEditor)
-        state.courses.forEach { course -> CourseOption(course, false, { onCourse(course.id) }) }
+        ActionButton(label(R.string.course_title), onEditor, enabled = enabled)
+        content()
     }
 }
 

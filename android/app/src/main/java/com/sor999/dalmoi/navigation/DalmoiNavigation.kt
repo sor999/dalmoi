@@ -2,22 +2,10 @@ package com.sor999.dalmoi.navigation
 
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.Keep
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,15 +14,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,7 +30,9 @@ import com.sor999.dalmoi.R
 import com.sor999.dalmoi.app.demo.DalmoiDemoViewModel
 import com.sor999.dalmoi.presentation.auth.AuthScreen
 import com.sor999.dalmoi.presentation.common.component.Body
+import com.sor999.dalmoi.presentation.common.component.BottomNavigation
 import com.sor999.dalmoi.presentation.common.component.LabeledInput
+import com.sor999.dalmoi.presentation.common.component.NavigationTab
 import com.sor999.dalmoi.presentation.common.component.label
 import com.sor999.dalmoi.presentation.common.theme.Palette
 import com.sor999.dalmoi.presentation.course.CourseDetailScreen
@@ -213,47 +197,16 @@ fun DalmoiApp(
                 }
             }
             if (screen in listOf(AppScreen.Home, AppScreen.Courses, AppScreen.Crews)) {
-                Surface(color = Palette.White) {
-                    Column {
-                        HorizontalDivider(color = Palette.Border)
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
-                            listOf(
-                                AppScreen.Home to R.string.nav_home,
-                                AppScreen.Courses to R.string.nav_courses,
-
-                                AppScreen.Crews to R.string.nav_crews,
-                                AppScreen.Record to R.string.nav_records,
-                            ).forEach { (
-                                target,
-                                title,
-                            ),
-                                ->
-                                val selected = target == screen
-                                Column(
-                                    Modifier.weight(1f).heightIn(min = 48.dp).semantics { this.selected = selected }
-                                        .clickable(role = Role.Tab) { open(target) }.padding(top = 6.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    Box(
-                                        Modifier.width(22.dp).height(4.dp).background(
-                                            if (selected) Palette.Ink else Color.Transparent,
-
-                                            RoundedCornerShape(2.dp),
-                                        ),
-                                    )
-                                    Body(
-                                        label(title),
-                                        size = 11.sp,
-                                        weight = if (selected) FontWeight.Bold else FontWeight.Normal,
-
-                                        color = if (selected) Palette.Ink else Palette.Muted,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                BottomNavigation(
+                    listOf(
+                        NavigationTab(AppScreen.Home, R.string.nav_home),
+                        NavigationTab(AppScreen.Courses, R.string.nav_courses),
+                        NavigationTab(AppScreen.Crews, R.string.nav_crews),
+                        NavigationTab(AppScreen.Record, R.string.nav_records),
+                    ),
+                    screen,
+                    open,
+                )
             }
         }
     }
