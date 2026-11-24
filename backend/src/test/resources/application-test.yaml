@@ -1,0 +1,10 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+dalmoi:
+  record:
+    worker-enabled: false
+  auth:
+    secret: dGVzdC1vbmx5LWRhbG1vaS1zaWduaW5nLWtleS0zMi1ieXRlcw==
