@@ -67,6 +67,7 @@ class StopStyleHookTest(unittest.TestCase):
         result = self.invoke()
         self.assertEqual("block", result["decision"])
         self.assertIn("style failed", result["reason"])
+        self.assertIn("spotlessApply", result["reason"])
         self.assertTrue((self.root / "android/checks.log").exists())
 
     def test_repeated_failure_reports_without_an_infinite_continuation(self):
@@ -78,9 +79,13 @@ class StopStyleHookTest(unittest.TestCase):
 
     def test_missing_wrapper_is_not_reported_as_success(self):
         (self.root / "android/gradlew").unlink()
+        self.write("backend/src/Example.java")
         result = self.invoke()
         self.assertEqual("block", result["decision"])
-        self.assertIn("실행 불가", result["reason"])
+        self.assertIn("android/gradlew 누락", result["reason"])
+        self.assertIn("현재 브랜치와 프로젝트 경로", result["reason"])
+        self.assertNotIn("spotlessApply", result["reason"])
+        self.assertTrue((self.root / "backend/checks.log").exists())
 
 
 if __name__ == "__main__":

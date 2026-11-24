@@ -47,7 +47,7 @@ def failure_result(message, already_continued):
         return {"systemMessage": "형식 검사 미통과: " + message
                 + " 자동 재시도는 한 번으로 제한합니다. 완료 보고에 미해결 원인을 명시하세요."}
     return {"decision": "block", "reason": message
-            + " 변경 영역의 spotlessApply로 수정하고 재검사하세요. 사용자 변경과 스테이징을 보존하고,"
+            + " 사용자 변경과 스테이징을 보존하고,"
             + " 실행 환경 문제라면 성공으로 보고하지 말고 원인을 설명하세요."}
 
 
@@ -57,12 +57,19 @@ def check(payload):
     areas = [area for area in CHECKS if any(relevant(p, area) for p in paths)]
     failures = []
     for area in areas:
-        command = [str(root / area / "gradlew"), "--console=plain", *CHECKS[area]]
+        wrapper = root / area / "gradlew"
+        if not wrapper.is_file():
+            failures.append(f"{area}: 검사 실행 불가 ({area}/gradlew 누락). "
+                            "현재 브랜치와 프로젝트 경로를 확인하고 Gradle Wrapper가 있는 "
+                            "완전한 작업본에서 검사를 다시 실행하세요.")
+            continue
+        command = [str(wrapper), "--console=plain", *CHECKS[area]]
         try:
             result = subprocess.run(command, cwd=root / area, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, text=True, timeout=120)
             if result.returncode:
-                failures.append(f"{area}: 검사 실패\n{result.stdout[-5000:]}")
+                failures.append(f"{area}: 검사 실패\n{result.stdout[-5000:]}\n"
+                                "형식 위반은 해당 프로젝트의 spotlessApply로 수정하고 재검사하세요.")
         except (OSError, subprocess.TimeoutExpired) as error:
             failures.append(f"{area}: 검사 실행 불가 ({error})")
     if failures:
