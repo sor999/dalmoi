@@ -218,6 +218,7 @@ class BackendApiSmokeTest {
         compose.onNodeWithText(text(R.string.course_save)).assertIsNotEnabled()
         map.performTouchInput { click(Offset(width * .60f, height * .50f)) }
         waitUntilEnabled(R.string.course_save)
+        if (isCoordinateQaEnabled()) verifyCourseEditorLocation()
         click(R.string.course_undo)
         compose.onNodeWithText(text(R.string.course_save)).assertIsNotEnabled()
         map.performTouchInput { click(Offset(width * .70f, height * .52f)) }
@@ -407,6 +408,18 @@ class BackendApiSmokeTest {
             mapView.getMapAsync { ready.complete(it) }
         }
         return runBlocking { withTimeout(15_000) { ready.await() } }
+    }
+
+    private fun verifyCourseEditorLocation() {
+        val map = awaitMap()
+        compose.runOnIdle { map.moveCamera(CameraUpdate.scrollTo(LatLng(37.40, 127.10))) }
+        compose.onNodeWithContentDescription(text(R.string.run_my_location)).performClick()
+        compose.waitUntil(25_000) {
+            compose.runOnIdle {
+                val target = map.cameraPosition.target
+                abs(target.latitude - 37.52) < 0.0002 && target.longitude in 126.9299..126.9316
+            }
+        }
     }
 
     private fun verifyMyLocationCamera() {

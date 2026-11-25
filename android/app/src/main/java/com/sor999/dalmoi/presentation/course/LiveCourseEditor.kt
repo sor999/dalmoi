@@ -1,5 +1,9 @@
 package com.sor999.dalmoi.presentation.course
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.location.LocationManager
+import android.os.CancellationSignal
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,10 +32,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -44,6 +50,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
 import com.sor999.dalmoi.BuildConfig
 import com.sor999.dalmoi.R
 import com.sor999.dalmoi.domain.model.GeoPoint
@@ -52,16 +60,44 @@ import com.sor999.dalmoi.presentation.common.component.Body
 import com.sor999.dalmoi.presentation.common.component.LabeledInput
 import com.sor999.dalmoi.presentation.common.component.Metric
 import com.sor999.dalmoi.presentation.common.component.label
+import com.sor999.dalmoi.presentation.common.component.rememberPreciseLocationAction
 import com.sor999.dalmoi.presentation.common.theme.Corners
 import com.sor999.dalmoi.presentation.common.theme.DIALOG_SCRIM_ALPHA
 import com.sor999.dalmoi.presentation.common.theme.Palette
 import com.sor999.dalmoi.presentation.common.theme.Spacing
 import com.sor999.dalmoi.presentation.common.theme.TextSizes
 import java.util.Locale
+import kotlin.coroutines.resume
 import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
+
+@SuppressLint("MissingPermission") // The button checks precise location permission before calling.
+private suspend fun findCourseLocation(context: Context): GeoPoint? = suspendCancellableCoroutine { continuation ->
+    val manager = context.getSystemService(LocationManager::class.java)
+    if (manager == null || !manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+        continuation.resume(null)
+        return@suspendCancellableCoroutine
+    }
+    val cancel = CancellationSignal()
+    continuation.invokeOnCancellation { cancel.cancel() }
+    try {
+        LocationManagerCompat.getCurrentLocation(
+            manager,
+            LocationManager.GPS_PROVIDER,
+            cancel,
+            ContextCompat.getMainExecutor(context),
+        ) { fix ->
+            continuation.resume(fix?.let { GeoPoint(it.latitude, it.longitude) })
+        }
+    } catch (_: SecurityException) {
+        continuation.resume(null)
+    }
+}
 
 @Composable
 internal fun LiveCourseEditor(
@@ -82,6 +118,27 @@ internal fun LiveCourseEditor(
     var naming by rememberSaveable { mutableStateOf(false) }
     var confirmingReset by rememberSaveable { mutableStateOf(false) }
     var recenterRequest by rememberSaveable { mutableIntStateOf(0) }
+    var myLocation by remember { mutableStateOf<GeoPoint?>(null) }
+    var locating by remember { mutableStateOf(false) }
+    var locationUnavailable by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val locate = rememberPreciseLocationAction {
+        if (!locating) {
+            locating = true
+            locationUnavailable = false
+            scope.launch {
+                val point = withTimeoutOrNull(20_000) { findCourseLocation(context) }
+                locating = false
+                locationUnavailable = point == null
+                if (point != null) {
+                    myLocation = point
+                    recenterRequest++
+                }
+            }
+        }
+    }
+    val locationLabel = label(R.string.run_self_location)
     val distance = remember(points) { String.format(Locale.getDefault(), "%.2f", routeLengthKm(points)) }
 
     BoxWithConstraints(modifier.fillMaxSize()) {
@@ -89,7 +146,15 @@ internal fun LiveCourseEditor(
         val panelScale = (maxWidth / 344.dp).coerceIn(1f, 1.18f)
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                CourseMap(points, Modifier.fillMaxSize(), onPickPoint = onPoint, recenterRequest = recenterRequest)
+                CourseMap(
+                    points,
+                    Modifier.fillMaxSize(),
+                    onPickPoint = onPoint,
+                    runnerMarkers = listOfNotNull(
+                        myLocation?.let { RunnerMarker(it, locationLabel, stale = false, self = true) },
+                    ),
+                    centerOnRunner = recenterRequest,
+                )
                 Column(
                     Modifier.fillMaxWidth().windowInsetsPadding(
                         WindowInsets.statusBars.union(WindowInsets(top = 32.dp)),
@@ -130,14 +195,20 @@ internal fun LiveCourseEditor(
                             }
                         }
                     }
-                    if (error != null && !naming) {
+                    val notice = when {
+                        error != null -> error
+                        locating -> label(R.string.course_location_searching)
+                        locationUnavailable -> label(R.string.course_location_unavailable)
+                        else -> null
+                    }
+                    if (notice != null && !naming) {
                         Surface(
                             Modifier.fillMaxWidth().padding(start = 14.dp, top = Spacing.Tiny, end = 14.dp),
                             shape = RoundedCornerShape(Corners.Input),
-                            color = Palette.Error,
+                            color = if (locating && error == null) Palette.Ink else Palette.Error,
                         ) {
                             Body(
-                                error,
+                                notice,
                                 Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                                     .semantics { liveRegion = LiveRegionMode.Polite },
                                 size = 13.sp,
@@ -150,8 +221,8 @@ internal fun LiveCourseEditor(
                 }
                 if (BuildConfig.NAVER_MAP_CONFIGURED) {
                     Surface(
-                        onClick = { recenterRequest++ },
-                        enabled = !busy,
+                        onClick = locate,
+                        enabled = !busy && !locating,
                         modifier = Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 12.dp).size(44.dp),
                         shape = CircleShape,
                         color = Palette.White,
@@ -160,7 +231,7 @@ internal fun LiveCourseEditor(
                         Box(contentAlignment = Alignment.Center) {
                             Image(
                                 painterResource(R.drawable.ic_course_recenter),
-                                label(R.string.course_recenter),
+                                label(R.string.run_my_location),
                                 Modifier.size(14.dp),
                             )
                         }

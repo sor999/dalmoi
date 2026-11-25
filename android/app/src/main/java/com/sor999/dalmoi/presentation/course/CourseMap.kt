@@ -64,7 +64,6 @@ internal fun CourseMap(
     points: List<GeoPoint>,
     modifier: Modifier = Modifier,
     onPickPoint: ((GeoPoint) -> Unit)? = null,
-    recenterRequest: Int = 0,
     nightMode: Boolean = false,
     referencePoints: List<GeoPoint> = emptyList(),
     detailLoop: Boolean? = null,
@@ -84,7 +83,6 @@ internal fun CourseMap(
             points,
             modifier,
             onPickPoint,
-            recenterRequest,
             nightMode,
             referencePoints,
             detailLoop,
@@ -102,7 +100,6 @@ private fun CourseMapView(
     points: List<GeoPoint>,
     modifier: Modifier,
     onPickPoint: ((GeoPoint) -> Unit)?,
-    recenterRequest: Int,
     nightMode: Boolean,
     referencePoints: List<GeoPoint>,
     detailLoop: Boolean?,
@@ -121,7 +118,6 @@ private fun CourseMapView(
         if (detailLoop == true) loopMarker(context, loopMarkerSize) else null
     }
     val editing = onPickPoint != null
-    var lastRecenterRequest by remember { mutableIntStateOf(recenterRequest) }
     var lastRunnerCenter by remember { mutableIntStateOf(-1) }
     val currentPick by rememberUpdatedState(onPickPoint)
     val currentPoints by rememberUpdatedState(points + referencePoints)
@@ -228,14 +224,6 @@ private fun CourseMapView(
         if (!loaded && !authFailed) {
             delay(20_000)
             timedOut = true
-        }
-    }
-
-    LaunchedEffect(recenterRequest, loaded, map) {
-        val activeMap = map
-        if (activeMap != null && loaded && lastRecenterRequest != recenterRequest) {
-            activeMap.showRoute(currentPoints, boundsPadding)
-            lastRecenterRequest = recenterRequest
         }
     }
 
