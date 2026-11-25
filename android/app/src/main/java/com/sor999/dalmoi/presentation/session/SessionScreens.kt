@@ -2,6 +2,7 @@ package com.sor999.dalmoi.presentation.session
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -38,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -46,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.sor999.dalmoi.BuildConfig
 import com.sor999.dalmoi.R
 import com.sor999.dalmoi.app.demo.CourseCardData
 import com.sor999.dalmoi.app.demo.DalmoiUiState
@@ -67,6 +71,7 @@ import com.sor999.dalmoi.presentation.common.map.MapArtwork
 import com.sor999.dalmoi.presentation.common.theme.Corners
 import com.sor999.dalmoi.presentation.common.theme.Palette
 import com.sor999.dalmoi.presentation.course.CourseMap
+import com.sor999.dalmoi.presentation.course.RunnerMarker
 import java.time.Duration
 import java.time.Instant
 import java.util.Locale
@@ -294,7 +299,12 @@ internal fun WaitingRoomLayout(
     }
 }
 
-internal data class LiveRunningContent(val course: List<GeoPoint>, val startedAt: Instant?)
+internal data class LiveRunningContent(
+    val course: List<GeoPoint>,
+    val startedAt: Instant?,
+    val runners: List<RunnerMarker>,
+    val ownMarker: RunnerMarker?,
+)
 
 @Composable
 fun RunningScreen(state: DalmoiUiState, onFinish: () -> Unit, modifier: Modifier = Modifier) {
@@ -319,6 +329,7 @@ internal fun RunningLayout(
         }
     }
     var endDialog by rememberSaveable { mutableStateOf(false) }
+    var centerOnRunner by rememberSaveable { mutableIntStateOf(0) }
     BackHandler { if (enabled) endDialog = true }
     val dark = !mvp
     val background = if (dark) Palette.Running else Palette.White
@@ -326,7 +337,13 @@ internal fun RunningLayout(
     BoxWithConstraints(modifier.fillMaxSize().background(background)) {
         val panelLimit = maxHeight * .7f
         if (live != null) {
-            CourseMap(live.course, Modifier.fillMaxSize(), nightMode = true)
+            CourseMap(
+                live.course,
+                Modifier.fillMaxSize(),
+                nightMode = true,
+                runnerMarkers = live.runners + listOfNotNull(live.ownMarker),
+                centerOnRunner = centerOnRunner,
+            )
         } else {
             FigmaMap(
                 if (mvp) {
@@ -356,11 +373,36 @@ internal fun RunningLayout(
                     }
                 }
             } else if (live != null) {
-                StatusChip(
-                    label(R.string.run_stopped),
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                    dot = Palette.Muted,
-                )
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val status = when {
+                        live.ownMarker == null -> R.string.run_tracking_waiting
+                        disconnected -> R.string.run_tracking_local_only
+                        else -> R.string.run_tracking_sharing
+                    }
+                    StatusChip(label(status), dot = if (disconnected) Palette.Muted else Palette.Lime)
+                    if (BuildConfig.NAVER_MAP_CONFIGURED) {
+                        Surface(
+                            onClick = { centerOnRunner++ },
+                            enabled = live.ownMarker != null,
+                            modifier = Modifier.size(44.dp),
+                            shape = CircleShape,
+                            color = Palette.White,
+                            shadowElevation = 3.dp,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Image(
+                                    painterResource(R.drawable.ic_course_recenter),
+                                    label(R.string.run_my_location),
+                                    Modifier.size(14.dp),
+                                )
+                            }
+                        }
+                    }
+                }
             } else {
                 Row(
                     Modifier.fillMaxWidth().padding(
@@ -474,9 +516,7 @@ internal fun RunningLayout(
                                 Modifier.weight(1f),
                             )
                         }
-                        if (live != null) {
-                            Caption(label(R.string.api_gps_pending), color = Palette.Faint)
-                        } else {
+                        if (live == null) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 PeerChip(
                                     label(R.string.sample_peer_seoyeon),

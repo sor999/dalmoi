@@ -65,7 +65,8 @@ data class BackendUiState(
     val record: RunRecord? = null,
 )
 
-class BackendViewModel(private val repository: BackendRepository) : ViewModel() {
+class BackendViewModel(private val repository: BackendRepository, private val onRunFinished: () -> Unit = {}) :
+    ViewModel() {
     private val mutableState = MutableStateFlow(BackendUiState(signedIn = repository.signedIn.value))
     val uiState = mutableState.asStateFlow()
     private var request: Job? = null
@@ -274,6 +275,10 @@ class BackendViewModel(private val repository: BackendRepository) : ViewModel() 
     fun commandSession(command: String) = execute {
         val session = mutableState.value.session ?: return@execute
         repository.sessionCommand(session.id, command).getOrThrow()
+        if (command == "me/finish") {
+            onRunFinished()
+            mutableState.update { it.copy(session = session.copy(myStatus = "FINISHED")) }
+        }
         loadSession(session.id)
     }
     fun selectRecord(record: RunRecord) {

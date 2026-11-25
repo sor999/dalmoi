@@ -21,6 +21,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -28,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -35,13 +37,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sor999.dalmoi.R
 import com.sor999.dalmoi.app.demo.DalmoiUiState
 import com.sor999.dalmoi.domain.model.ApiFailure
 import com.sor999.dalmoi.domain.model.ApiFailureKind
+import com.sor999.dalmoi.platform.tracking.RunLocationService
 import com.sor999.dalmoi.presentation.auth.AuthScreen
 import com.sor999.dalmoi.presentation.common.component.ActionButton
 import com.sor999.dalmoi.presentation.common.component.Body
@@ -54,6 +60,7 @@ import com.sor999.dalmoi.presentation.course.CourseDetailLayout
 import com.sor999.dalmoi.presentation.course.CourseListLayout
 import com.sor999.dalmoi.presentation.course.CourseMap
 import com.sor999.dalmoi.presentation.course.LiveCourseEditor
+import com.sor999.dalmoi.presentation.course.RunnerMarker
 import com.sor999.dalmoi.presentation.crew.CrewDetailLayout
 import com.sor999.dalmoi.presentation.crew.CrewListItem
 import com.sor999.dalmoi.presentation.crew.CrewListLayout
@@ -406,13 +413,38 @@ private fun BackendSession(state: BackendUiState, model: BackendViewModel, modif
         return
     }
     if (session.status == "RUNNING" && session.myStatus == "RUNNING") {
+        val context = LocalContext.current
+        val lifecycle = LocalLifecycleOwner.current.lifecycle
+        val tracking by RunLocationService.tracking.collectAsStateWithLifecycle()
+        LaunchedEffect(session.id, lifecycle) {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                RunLocationService.start(context, session.id)
+            }
+        }
+        val activeTracking = tracking.takeIf { it.sessionId == session.id }
+        val positions = activeTracking?.positions.orEmpty()
+        val names = session.memberStatuses.associate { it.memberId to it.nickname }
+        val myId = state.dashboard?.member?.id
+        val ownPosition = positions.firstOrNull { it.memberId == myId }
+        val myLocation = activeTracking?.myLocation ?: ownPosition?.takeUnless { it.isStale }?.point
+        val ownLabel = names[myId] ?: stringResource(R.string.run_self_location)
+        val markers = positions.filterNot { it.memberId == myId }.mapNotNull { runner ->
+            val name = names[runner.memberId] ?: return@mapNotNull null
+            RunnerMarker(runner.point, name, runner.isStale)
+        }
+        val sharing = activeTracking?.sharing == true && ownPosition?.isStale != true
         RunningLayout(
             mvp = false,
-            disconnected = false,
+            disconnected = !sharing,
             plannedDistance = formatDistance(session.course.distanceKm),
             onFinish = { model.commandSession("me/finish") },
             modifier = modifier,
-            live = LiveRunningContent(session.course.points, session.myStartedAt),
+            live = LiveRunningContent(
+                session.course.points,
+                session.myStartedAt,
+                markers,
+                myLocation?.let { RunnerMarker(it, ownLabel, stale = false, self = true) },
+            ),
             enabled = !state.busy,
         )
         return

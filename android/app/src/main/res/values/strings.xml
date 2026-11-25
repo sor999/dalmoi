@@ -125,6 +125,12 @@
     <string name="run_sharing">위치 공유 중 · 3명</string>
     <string name="run_stale_location">마지막 수신 09:40:18 · 표시된 위치는 최신이 아닙니다.</string>
     <string name="run_stopped">위치 갱신 중단</string>
+    <string name="run_tracking_sharing">위치 공유 중</string>
+    <string name="run_tracking_waiting">GPS 신호 대기 중</string>
+    <string name="run_tracking_local_only">내 위치 표시 중 · 공유 연결 안 됨</string>
+    <string name="run_my_location">내 위치로 이동</string>
+    <string name="run_self_location">내 위치</string>
+    <string name="run_tracking_notification">달모이가 주행 위치를 기록하고 있어요</string>
     <string name="run_waiting">대기</string>
     <string name="run_waiting_room">대기방</string>
     <string name="sample_company_crew">회사 점심런</string>

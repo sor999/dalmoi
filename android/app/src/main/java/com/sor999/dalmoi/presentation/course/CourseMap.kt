@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.res.ResourcesCompat
@@ -67,6 +68,8 @@ internal fun CourseMap(
     nightMode: Boolean = false,
     referencePoints: List<GeoPoint> = emptyList(),
     detailLoop: Boolean? = null,
+    runnerMarkers: List<RunnerMarker> = emptyList(),
+    centerOnRunner: Int = 0,
 ) {
     if (!BuildConfig.NAVER_MAP_CONFIGURED) {
         Box(modifier.background(Palette.Soft), contentAlignment = Alignment.Center) {
@@ -85,10 +88,14 @@ internal fun CourseMap(
             nightMode,
             referencePoints,
             detailLoop,
+            runnerMarkers,
+            centerOnRunner,
             onRetry = { attempt++ },
         )
     }
 }
+
+internal data class RunnerMarker(val point: GeoPoint, val label: String, val stale: Boolean, val self: Boolean = false)
 
 @Composable
 private fun CourseMapView(
@@ -99,6 +106,8 @@ private fun CourseMapView(
     nightMode: Boolean,
     referencePoints: List<GeoPoint>,
     detailLoop: Boolean?,
+    runnerMarkers: List<RunnerMarker>,
+    centerOnRunner: Int,
     onRetry: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -113,6 +122,7 @@ private fun CourseMapView(
     }
     val editing = onPickPoint != null
     var lastRecenterRequest by remember { mutableIntStateOf(recenterRequest) }
+    var lastRunnerCenter by remember { mutableIntStateOf(-1) }
     val currentPick by rememberUpdatedState(onPickPoint)
     val currentPoints by rememberUpdatedState(points + referencePoints)
     var map by remember { mutableStateOf<NaverMap?>(null) }
@@ -229,6 +239,15 @@ private fun CourseMapView(
         }
     }
 
+    val ownPosition = runnerMarkers.firstOrNull { it.self }?.point
+    LaunchedEffect(map, loaded, ownPosition, centerOnRunner) {
+        val activeMap = map
+        if (activeMap != null && loaded && ownPosition != null && centerOnRunner != lastRunnerCenter) {
+            activeMap.moveCamera(CameraUpdate.scrollAndZoomTo(ownPosition.toLatLng(), 16.0))
+            lastRunnerCenter = centerOnRunner
+        }
+    }
+
     // Each point update replaces the overlays as a group, keeping undo and reset in sync.
     DisposableEffect(map, points, referencePoints, routeWidth, detailLoop, loopMarker) {
         val activeMap = map
@@ -269,6 +288,25 @@ private fun CourseMapView(
         }
     }
 
+    DisposableEffect(map, runnerMarkers) {
+        val activeMap = map
+        val markers = if (activeMap == null) {
+            emptyList()
+        } else {
+            runnerMarkers.map { runner ->
+                Marker().apply {
+                    position = runner.point.toLatLng()
+                    captionText = runner.label
+                    alpha = if (runner.stale) 0.55f else 1f
+                    if (runner.self) iconTintColor = Palette.Lime.toArgb()
+                    zIndex = if (runner.self) 11 else 10
+                    this.map = activeMap
+                }
+            }
+        }
+        onDispose { markers.forEach { it.map = null } }
+    }
+
     val description = stringResource(R.string.api_course_map_label)
     val ready = loaded && !authFailed
     Box(modifier) {
@@ -276,7 +314,10 @@ private fun CourseMapView(
             factory = { mapView },
             modifier = Modifier.fillMaxSize()
                 .testTag(if (ready) "course-map-ready" else "course-map")
-                .semantics { contentDescription = description },
+                .semantics {
+                    contentDescription = description
+                    if (runnerMarkers.isNotEmpty()) stateDescription = runnerMarkers.joinToString { it.label }
+                },
         )
         if (!ready) {
             Surface(Modifier.align(Alignment.Center), color = Palette.White) {
